@@ -1,6 +1,8 @@
 module github.com/tailscale/go-cache-plugin
 
-go 1.22
+go 1.22.1
+
+toolchain go1.23.0
 
 require (
 	github.com/aws/aws-sdk-go-v2/config v1.27.28
@@ -9,9 +11,11 @@ require (
 	github.com/creachadair/flax v0.0.0-20240525192034-44db93b3a8ad
 	github.com/creachadair/gocache v0.0.0-20240819135622-e170e0c758d4
 	github.com/creachadair/taskgroup v0.9.1
+	honnef.co/go/tools v0.5.1
 )
 
 require (
+	github.com/BurntSushi/toml v1.4.1-0.20240526193622-a339e1f7089c // indirect
 	github.com/aws/aws-sdk-go-v2 v1.30.4 // indirect
 	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.6.4 // indirect
 	github.com/aws/aws-sdk-go-v2/credentials v1.17.28 // indirect
@@ -30,4 +34,8 @@ require (
 	github.com/aws/smithy-go v1.20.4 // indirect
 	github.com/creachadair/atomicfile v0.3.4 // indirect
 	github.com/creachadair/mds v0.17.1 // indirect
+	golang.org/x/exp/typeparams v0.0.0-20231108232855-2478ac86f678 // indirect
+	golang.org/x/mod v0.17.0 // indirect
+	golang.org/x/sync v0.7.0 // indirect
+	golang.org/x/tools v0.21.1-0.20240531212143-b6235391adb3 // indirect
 )
