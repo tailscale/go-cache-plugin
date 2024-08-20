@@ -24,6 +24,7 @@ var flags struct {
 	MinUploadSize     int64         `flag:"min-upload-size,default=$GOCACHE_MIN_SIZE,Minimum object size to upload to S3 (in bytes)"`
 	Concurrency       int           `flag:"c,default=$GOCACHE_CONCURRENCY,Maximum number of concurrent requests"`
 	UploadConcurrency int           `flag:"u,Maximum concurrency for upload to S3"`
+	PrintMetrics      bool          `flag:"m,default=$GOCACHE_METRICS,Print summary metrics to stderr at exit"`
 	Expiration        time.Duration `flag:"x,default=$GOCACHE_EXPIRY,Cache expiration period (optional)"`
 	Verbose           bool          `flag:"v,default=$GOCACHE_VERBOSE,Enable verbose logging"`
 }
@@ -68,8 +69,9 @@ settings can be set via environment variables as well as flags.
     --prefix          GOCACHE_KEY_PREFIX   string    "worker-1"
     --min-upload-size GOCACHE_MIN_SIZE     int64     100
     -c                GOCACHE_CONCURRENCY  int       8
+    -m                GOCACHE_METRICS      bool      true
     -x                GOCACHE_EXPIRY       duration  24h
-    -v                GOCACHE_VERBOSE      bool      true
+    -v                GOCACHE_VERBOSE      bool      false
 `,
 			}}),
 			command.VersionCommand(),
