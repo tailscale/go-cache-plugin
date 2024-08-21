@@ -9,7 +9,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.59.0
 	github.com/creachadair/command v0.1.13
 	github.com/creachadair/flax v0.0.0-20240525192034-44db93b3a8ad
-	github.com/creachadair/gocache v0.0.0-20240819135622-e170e0c758d4
+	github.com/creachadair/gocache v0.0.0-20240821003024-24f7805a7846
 	github.com/creachadair/taskgroup v0.9.1
 	honnef.co/go/tools v0.5.1
 )
