@@ -5,32 +5,14 @@ package main
 import (
 	"cmp"
 	"context"
-	"flag"
 	"log"
 	"os"
-	"time"
 
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/creachadair/command"
 	"github.com/creachadair/flax"
 )
-
-var flags struct {
-	CacheDir      string        `flag:"cache-dir,default=$GOCACHE_DIR,Local cache directory (required)"`
-	S3Bucket      string        `flag:"bucket,default=$GOCACHE_S3_BUCKET,S3 bucket name (required)"`
-	S3Region      string        `flag:"region,default=$GOCACHE_S3_REGION,S3 region"`
-	KeyPrefix     string        `flag:"prefix,default=$GOCACHE_KEY_PREFIX,S3 key prefix (optional)"`
-	MinUploadSize int64         `flag:"min-upload-size,default=$GOCACHE_MIN_SIZE,Minimum object size to upload to S3 (in bytes)"`
-	Concurrency   int           `flag:"c,default=$GOCACHE_CONCURRENCY,Maximum number of concurrent requests"`
-	S3Concurrency int           `flag:"u,default=$GOCACHE_S3_CONCURRENCY,Maximum concurrency for upload to S3"`
-	PrintMetrics  bool          `flag:"m,default=$GOCACHE_METRICS,Print summary metrics to stderr at exit"`
-	Expiration    time.Duration `flag:"x,default=$GOCACHE_EXPIRY,Cache expiration period (optional)"`
-	Verbose       bool          `flag:"v,default=$GOCACHE_VERBOSE,Enable verbose logging"`
-	DebugLog      bool          `flag:"debug,default=$GOCACHE_DEBUG,Enable detailed per-request debug logging (noisy)"`
-}
-
-func init() { flax.MustBind(flag.CommandLine, &flags) }
 
 func main() {
 	log.SetFlags(log.Ltime | log.Lmicroseconds)
@@ -53,7 +35,7 @@ stored in the specified S3 bucket, and staged in a local directory specified by
 the --cache-dir flag or GOCACHE_DIR environment.`,
 
 		SetFlags: command.Flags(flax.MustBind, &flags),
-		Run:      command.Adapt(runLocal),
+		Run:      command.Adapt(runDirect),
 
 		Commands: []*command.C{
 			command.HelpCommand([]command.HelpTopic{{
@@ -80,7 +62,8 @@ settings can be set via environment variables as well as flags.
 			command.VersionCommand(),
 		},
 	}
-	command.RunOrFail(root.NewEnv(nil), os.Args[1:])
+	env := root.NewEnv(nil).MergeFlags(true)
+	command.RunOrFail(env, os.Args[1:])
 }
 
 // getBucketRegion reports the specified region for the given bucket.
