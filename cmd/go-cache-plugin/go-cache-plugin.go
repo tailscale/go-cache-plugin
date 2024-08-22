@@ -38,6 +38,18 @@ the --cache-dir flag or GOCACHE_DIR environment.`,
 		Run:      command.Adapt(runDirect),
 
 		Commands: []*command.C{
+			{
+				Name:     "serve",
+				Help:     `Run a cache server.`,
+				SetFlags: command.Flags(flax.MustBind, &remoteFlags),
+				Run:      command.Adapt(runRemote),
+			},
+			{
+				Name:  "connect",
+				Usage: "<socket-path>",
+				Help:  `Connect to a remote cache server.`,
+				Run:   command.Adapt(runConnect),
+			},
 			command.HelpCommand([]command.HelpTopic{{
 				Name: "environment",
 				Help: `Environment variables understood by this program.

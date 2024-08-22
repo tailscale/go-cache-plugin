@@ -4,7 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
+	"log"
+	"net"
 	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/config"
@@ -12,6 +17,7 @@ import (
 	"github.com/creachadair/command"
 	"github.com/creachadair/gocache"
 	"github.com/creachadair/gocache/cachedir"
+	"github.com/creachadair/taskgroup"
 	"github.com/tailscale/go-cache-plugin/s3cache"
 )
 
@@ -93,5 +99,97 @@ func runDirect(env *command.Env) error {
 	if flags.Verbose || flags.PrintMetrics {
 		fmt.Fprintln(os.Stderr, s.Metrics())
 	}
+	return nil
+}
+
+var remoteFlags struct {
+	Socket string `flag:"socket,default=$GOCACHE_SOCKET,Socket path (required)"`
+}
+
+func noopClose(context.Context) error { return nil }
+
+// runRemote runs a cache communicating over a Unix-domain socket.
+func runRemote(env *command.Env) error {
+	if remoteFlags.Socket == "" {
+		return env.Usagef("you must provide a --socket path")
+	}
+
+	// Initialize the cache server. Unlike a direct server, only close down and
+	// wait for cache cleanup when the whole process exits.
+	s, err := initCacheServer(env)
+	if err != nil {
+		return err
+	}
+	closeHook := s.Close
+	s.Close = noopClose
+
+	// Listen for connections from the Go toolchain on the specified socket.
+	lst, err := net.Listen("unix", remoteFlags.Socket)
+	if err != nil {
+		return fmt.Errorf("listen: %w", err)
+	}
+	defer os.Remove(remoteFlags.Socket) // best-effort
+
+	ctx, cancel := signal.NotifyContext(env.Context(), syscall.SIGINT, syscall.SIGTERM)
+	defer cancel()
+	go func() {
+		<-ctx.Done()
+		log.Printf("signal received, closing listener")
+		lst.Close()
+	}()
+
+	var g taskgroup.Group
+	for {
+		conn, err := lst.Accept()
+		if err != nil {
+			if !errors.Is(err, net.ErrClosed) {
+				log.Printf("accept failed: %v, exiting server loop", err)
+			}
+			break
+		}
+		log.Printf("new client connection")
+		g.Go(func() error {
+			defer func() {
+				log.Printf("client connection closed")
+				conn.Close()
+			}()
+			return s.Run(ctx, conn, conn)
+		})
+	}
+	log.Printf("server loop exited, waiting for client exit")
+	g.Wait()
+	if closeHook != nil {
+		if err := closeHook(context.Background()); err != nil {
+			log.Printf("server close: %v (ignored)", err)
+		}
+	}
+	return nil
+}
+
+// runConnect implements a direct cache proxy by connecting to a remote server
+// over a Unix-domain socket.
+func runConnect(env *command.Env, socketPath string) error {
+	if socketPath == "" {
+		return env.Usagef("you must provide a socket path")
+	}
+	conn, err := net.Dial("unix", socketPath)
+	if err != nil {
+		return fmt.Errorf("dial socket: %w", err)
+	}
+	start := time.Now()
+	vprintf("connected to %q", socketPath)
+
+	out := taskgroup.Go(func() error {
+		_, err := io.Copy(os.Stdout, conn)
+		return err
+	})
+
+	_, rerr := io.Copy(conn, os.Stdin)
+	if rerr != nil {
+		vprintf("error sending: %v", rerr)
+	}
+	conn.Close()
+	out.Wait()
+	vprintf("connection closed (%v elapsed)", time.Since(start))
 	return nil
 }
