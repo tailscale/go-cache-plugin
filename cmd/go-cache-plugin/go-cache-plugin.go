@@ -39,16 +39,26 @@ the --cache-dir flag or GOCACHE_DIR environment.`,
 
 		Commands: []*command.C{
 			{
-				Name:     "serve",
-				Help:     `Run a cache server.`,
+				Name:  "serve",
+				Usage: "--socket <path>",
+				Help: `Run a cache server.
+
+In this mode, the cache server listens for connections on a socket instead of
+serving directly over stdin/stdout. The "connect" command adapts the direct
+interface to this one.`,
+
 				SetFlags: command.Flags(flax.MustBind, &remoteFlags),
 				Run:      command.Adapt(runRemote),
 			},
 			{
 				Name:  "connect",
 				Usage: "<socket-path>",
-				Help:  `Connect to a remote cache server.`,
-				Run:   command.Adapt(runConnect),
+				Help: `Connect to a remote cache server.
+
+This mode bridges stdin/stdout to a cache server (see the "serve" command)
+listening on a socket.`,
+
+				Run: command.Adapt(runConnect),
 			},
 			command.HelpCommand([]command.HelpTopic{{
 				Name: "environment",
