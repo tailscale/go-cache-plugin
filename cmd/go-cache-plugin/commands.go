@@ -159,7 +159,8 @@ func runRemote(env *command.Env) error {
 	log.Printf("server loop exited, waiting for client exit")
 	g.Wait()
 	if closeHook != nil {
-		if err := closeHook(context.Background()); err != nil {
+		ctx := gocache.WithLogf(context.Background(), log.Printf)
+		if err := closeHook(ctx); err != nil {
 			log.Printf("server close: %v (ignored)", err)
 		}
 	}
