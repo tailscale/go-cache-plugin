@@ -58,13 +58,14 @@ To make it easier to configure this tool for multiple workflows, most of the
 settings can be set via environment variables as well as flags.
 
     Flag              Variable               Format    Default
-    --cache-dir       GOCACHE_DIR            string    (required)
+    --cache-dir       GOCACHE_DIR            path      (required)
     --bucket          GOCACHE_S3_BUCKET      string    (required)
     --region          GOCACHE_S3_REGION      string    based on bucket
     --prefix          GOCACHE_KEY_PREFIX     string    ""
     --min-upload-size GOCACHE_MIN_SIZE       int64     0
     --metrics         GOCACHE_METRICS        bool      false
     --expiry          GOCACHE_EXPIRY         duration  0
+    --socket          GOCACHE_SOCKET         path      (required for "serve")
     -c                GOCACHE_CONCURRENCY    int       runtime.NumCPU
     -u                GOCACHE_S3_CONCURRENCY duration  runtime.NumCPU
     -v                GOCACHE_VERBOSE        bool      false
