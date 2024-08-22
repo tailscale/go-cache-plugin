@@ -49,7 +49,7 @@ import (
 // The object file contains just the binary data of the object.
 type Cache struct {
 	// Local is the local cache directory where actions and objects are staged.
-	// It must be non-nil. A local stage is required becuase the Go toolchain
+	// It must be non-nil. A local stage is required because the Go toolchain
 	// needs direct access to read the files reported by the cache.
 	// It is safe to use a tmpfs directory.
 	Local *cachedir.Dir
