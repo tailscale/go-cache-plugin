@@ -18,10 +18,10 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/service/s3"
-	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 	"github.com/creachadair/gocache"
 	"github.com/creachadair/gocache/cachedir"
 	"github.com/creachadair/taskgroup"
+	"github.com/tailscale/go-cache-plugin/internal/s3util"
 )
 
 // Cache implements callbacks for a gocache.Server using an S3 bucket for
@@ -110,7 +110,7 @@ func (s *Cache) Get(ctx context.Context, actionID string) (objectID, diskPath st
 		Key:    s.actionKey(actionID),
 	})
 	if err != nil {
-		if isNotExist(err) {
+		if s3util.IsNotExist(err) {
 			s.getFaultMiss.Add(1)
 			return "", "", nil // cache miss, OK
 		}
@@ -275,18 +275,6 @@ func (s *Cache) uploadConcurrency() int {
 		return runtime.NumCPU()
 	}
 	return s.UploadConcurrency
-}
-
-func isNotExist(err error) bool {
-	var notFound *types.NotFound
-	if errors.As(err, &notFound) {
-		return true
-	}
-	var noSuchKey *types.NoSuchKey
-	if errors.As(err, &noSuchKey) {
-		return true
-	}
-	return errors.Is(err, os.ErrNotExist)
 }
 
 func parseAction(r io.Reader) (objectID string, mtime time.Time, _ error) {
