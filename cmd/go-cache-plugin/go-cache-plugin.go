@@ -63,9 +63,9 @@ settings can be set via environment variables as well as flags.
     --region          GOCACHE_S3_REGION      string    based on bucket
     --prefix          GOCACHE_KEY_PREFIX     string    ""
     --min-upload-size GOCACHE_MIN_SIZE       int64     0
+    --metrics         GOCACHE_METRICS        bool      false
+    --expiry          GOCACHE_EXPIRY         duration  0
     -c                GOCACHE_CONCURRENCY    int       runtime.NumCPU
-    -m                GOCACHE_METRICS        bool      false
-    -x                GOCACHE_EXPIRY         duration  0
     -u                GOCACHE_S3_CONCURRENCY duration  runtime.NumCPU
     -v                GOCACHE_VERBOSE        bool      false
     --debug           GOCACHE_DEBUG          bool      false
