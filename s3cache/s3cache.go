@@ -153,6 +153,10 @@ func (s *Cache) Put(ctx context.Context, obj gocache.Object) (diskPath string, _
 	s.init()
 
 	// Compute an etag so we can do a conditional put on the object data.
+	//
+	// Note: We use MD5 here because the S3 API requires it for the ETag, we do
+	// not rely on it as a secure checksum. The toolchain verifies the content
+	// address against the bits we actually store.
 	hash := md5.New()
 	obj.Body = io.TeeReader(obj.Body, hash)
 
