@@ -46,7 +46,7 @@ func runLocal(env *command.Env) error {
 		S3Bucket:          flags.S3Bucket,
 		KeyPrefix:         flags.KeyPrefix,
 		MinUploadSize:     flags.MinUploadSize,
-		UploadConcurrency: flags.UploadConcurrency,
+		UploadConcurrency: flags.S3Concurrency,
 	}
 	close := cache.Close
 	if flags.Expiration > 0 {

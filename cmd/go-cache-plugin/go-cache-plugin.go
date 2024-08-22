@@ -17,16 +17,16 @@ import (
 )
 
 var flags struct {
-	CacheDir          string        `flag:"cache-dir,default=$GOCACHE_DIR,Local cache directory (required)"`
-	S3Bucket          string        `flag:"bucket,default=$GOCACHE_S3_BUCKET,S3 bucket name (required)"`
-	S3Region          string        `flag:"region,default=$GOCACHE_S3_REGION,S3 region"`
-	KeyPrefix         string        `flag:"prefix,default=$GOCACHE_KEY_PREFIX,S3 key prefix (optional)"`
-	MinUploadSize     int64         `flag:"min-upload-size,default=$GOCACHE_MIN_SIZE,Minimum object size to upload to S3 (in bytes)"`
-	Concurrency       int           `flag:"c,default=$GOCACHE_CONCURRENCY,Maximum number of concurrent requests"`
-	UploadConcurrency int           `flag:"u,Maximum concurrency for upload to S3"`
-	PrintMetrics      bool          `flag:"m,default=$GOCACHE_METRICS,Print summary metrics to stderr at exit"`
-	Expiration        time.Duration `flag:"x,default=$GOCACHE_EXPIRY,Cache expiration period (optional)"`
-	Verbose           bool          `flag:"v,default=$GOCACHE_VERBOSE,Enable verbose logging"`
+	CacheDir      string        `flag:"cache-dir,default=$GOCACHE_DIR,Local cache directory (required)"`
+	S3Bucket      string        `flag:"bucket,default=$GOCACHE_S3_BUCKET,S3 bucket name (required)"`
+	S3Region      string        `flag:"region,default=$GOCACHE_S3_REGION,S3 region"`
+	KeyPrefix     string        `flag:"prefix,default=$GOCACHE_KEY_PREFIX,S3 key prefix (optional)"`
+	MinUploadSize int64         `flag:"min-upload-size,default=$GOCACHE_MIN_SIZE,Minimum object size to upload to S3 (in bytes)"`
+	Concurrency   int           `flag:"c,default=$GOCACHE_CONCURRENCY,Maximum number of concurrent requests"`
+	S3Concurrency int           `flag:"u,default=$GOCACHE_S3_CONCURRENCY,Maximum concurrency for upload to S3"`
+	PrintMetrics  bool          `flag:"m,default=$GOCACHE_METRICS,Print summary metrics to stderr at exit"`
+	Expiration    time.Duration `flag:"x,default=$GOCACHE_EXPIRY,Cache expiration period (optional)"`
+	Verbose       bool          `flag:"v,default=$GOCACHE_VERBOSE,Enable verbose logging"`
 }
 
 func init() { flax.MustBind(flag.CommandLine, &flags) }
@@ -62,16 +62,17 @@ the --cache-dir flag or GOCACHE_DIR environment.`,
 To make it easier to configure this tool for multiple workflows, most of the
 settings can be set via environment variables as well as flags.
 
-    Flag              Variable             Format    Example
-    --cache-dir       GOCACHE_DIR          string    "/tmp/xyzzy"
-    --bucket          GOCACHE_S3_BUCKET    string    "tailscale-build-cache"
-    --region          GOCACHE_S3_REGION    string    "us-east-1"
-    --prefix          GOCACHE_KEY_PREFIX   string    "worker-1"
-    --min-upload-size GOCACHE_MIN_SIZE     int64     100
-    -c                GOCACHE_CONCURRENCY  int       8
-    -m                GOCACHE_METRICS      bool      true
-    -x                GOCACHE_EXPIRY       duration  24h
-    -v                GOCACHE_VERBOSE      bool      false
+    Flag              Variable               Format    Default
+    --cache-dir       GOCACHE_DIR            string    (required)
+    --bucket          GOCACHE_S3_BUCKET      string    (required)
+    --region          GOCACHE_S3_REGION      string    based on bucket
+    --prefix          GOCACHE_KEY_PREFIX     string    ""
+    --min-upload-size GOCACHE_MIN_SIZE       int64     0
+    -c                GOCACHE_CONCURRENCY    int       runtime.NumCPU
+    -m                GOCACHE_METRICS        bool      false
+    -x                GOCACHE_EXPIRY         duration  0
+    -u                GOCACHE_S3_CONCURRENCY duration  runtime.NumCPU
+    -v                GOCACHE_VERBOSE        bool      false
 `,
 			}}),
 			command.VersionCommand(),
