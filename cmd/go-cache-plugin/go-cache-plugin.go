@@ -27,6 +27,7 @@ var flags struct {
 	PrintMetrics  bool          `flag:"m,default=$GOCACHE_METRICS,Print summary metrics to stderr at exit"`
 	Expiration    time.Duration `flag:"x,default=$GOCACHE_EXPIRY,Cache expiration period (optional)"`
 	Verbose       bool          `flag:"v,default=$GOCACHE_VERBOSE,Enable verbose logging"`
+	DebugLog      bool          `flag:"debug,default=$GOCACHE_DEBUG,Enable detailed per-request debug logging (noisy)"`
 }
 
 func init() { flax.MustBind(flag.CommandLine, &flags) }
@@ -73,6 +74,7 @@ settings can be set via environment variables as well as flags.
     -x                GOCACHE_EXPIRY         duration  0
     -u                GOCACHE_S3_CONCURRENCY duration  runtime.NumCPU
     -v                GOCACHE_VERBOSE        bool      false
+    --debug           GOCACHE_DEBUG          bool      false
 `,
 			}}),
 			command.VersionCommand(),

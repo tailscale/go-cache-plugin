@@ -62,6 +62,7 @@ func runLocal(env *command.Env) error {
 		SetMetrics:  cache.SetMetrics,
 		MaxRequests: flags.Concurrency,
 		Logf:        vprintf,
+		LogRequests: flags.DebugLog,
 	}
 	if err := s.Run(env.Context(), os.Stdin, os.Stdout); err != nil {
 		return fmt.Errorf("cache server exited with error: %w", err)
