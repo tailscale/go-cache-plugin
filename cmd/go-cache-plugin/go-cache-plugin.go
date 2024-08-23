@@ -45,10 +45,14 @@ the --cache-dir flag or GOCACHE_DIR environment.`,
 
 In this mode, the cache server listens for connections on a socket instead of
 serving directly over stdin/stdout. The "connect" command adapts the direct
-interface to this one.`,
+interface to this one.
 
-				SetFlags: command.Flags(flax.MustBind, &remoteFlags),
-				Run:      command.Adapt(runRemote),
+By default, only the build cache is exported via the --socket path.
+If --modcache is set, the server also exports a caching module proxy at the
+specified address.`,
+
+				SetFlags: command.Flags(flax.MustBind, &serveFlags),
+				Run:      command.Adapt(runServe),
 			},
 			{
 				Name:  "connect",
