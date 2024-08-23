@@ -5,6 +5,22 @@
 
 This repository defines a tool implementing a `GOCACHEPROG` plugin backed by Amazon S3.
 
+## Installation
+
+```shell
+go install github.com/tailscale/go-cache-plugin/cmd/go-cache-plugin@latest
+```
+
+## Usage Outline
+
+```shell
+export GOCACHEPROG="go-cache-plugin --cache-dir=/tmp/gocache --bucket=some-s3-bucket"
+go test ./...
+```
+
+Using the plugin requires a Go toolchain built with `GOEXPERIMENT=cacheprog` enabled.
+However, you do not need the experiment enabled to build the plugin itself.
+
 ## References
 
 - [Cache plugin proposal](https://github.com/golang/go/issues/59719)
