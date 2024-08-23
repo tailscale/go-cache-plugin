@@ -3,15 +3,13 @@
 package main
 
 import (
-	"cmp"
 	"context"
 	"log"
 	"os"
 
-	"github.com/aws/aws-sdk-go-v2/config"
-	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/creachadair/command"
 	"github.com/creachadair/flax"
+	"github.com/tailscale/go-cache-plugin/internal/s3util"
 )
 
 func main() {
@@ -108,22 +106,7 @@ func getBucketRegion(ctx context.Context, bucket string) (string, error) {
 	if flags.S3Region != "" {
 		return flags.S3Region, nil
 	}
-
-	// The default AWS region, which we use for resolving the bucket location
-	// and also serves as the fallback if the API reports an empty region name.
-	// The API returns "" for buckets in this region for historical reasons.
-	const defaultRegion = "us-east-1"
-
-	cfg, err := config.LoadDefaultConfig(ctx, config.WithRegion(defaultRegion))
-	if err != nil {
-		return "", err
-	}
-	cli := s3.NewFromConfig(cfg)
-	loc, err := cli.GetBucketLocation(ctx, &s3.GetBucketLocationInput{Bucket: &bucket})
-	if err != nil {
-		return "", err
-	}
-	return cmp.Or(string(loc.LocationConstraint), defaultRegion), nil
+	return s3util.BucketRegion(ctx, bucket)
 }
 
 // vprintf acts as log.Printf if the --verbose flag is set; otherwise it
