@@ -62,36 +62,7 @@ listening on a socket.`,
 
 				Run: command.Adapt(runConnect),
 			},
-			command.HelpCommand([]command.HelpTopic{{
-				Name: "environment",
-				Help: `Environment variables understood by this program.
-
-To make it easier to configure this tool for multiple workflows, most of the
-settings can be set via environment variables as well as flags.
-
-   --------------------------------------------------------------------
-   Flag (global)      Variable               Format      Default
-   --------------------------------------------------------------------
-    --cache-dir       GOCACHE_DIR            path        (required)
-    --bucket          GOCACHE_S3_BUCKET      string      (required)
-    --region          GOCACHE_S3_REGION      string      based on bucket
-    --prefix          GOCACHE_KEY_PREFIX     string      ""
-    --min-upload-size GOCACHE_MIN_SIZE       int64       0
-    --metrics         GOCACHE_METRICS        bool        false
-    --expiry          GOCACHE_EXPIRY         duration    0
-    -c                GOCACHE_CONCURRENCY    int         runtime.NumCPU
-    -u                GOCACHE_S3_CONCURRENCY duration    runtime.NumCPU
-    -v                GOCACHE_VERBOSE        bool        false
-    --debug           GOCACHE_DEBUG          bool        false
-
-   --------------------------------------------------------------------
-   Flag (serve)       Variable               Format      Default
-   --------------------------------------------------------------------
-    --socket          GOCACHE_SOCKET         path        (required)
-    --modproxy        GOCACHE_MODPROXY       [host]:port ""
-    --sumdb           GOCACHE_SUMDB          host,...    ""
-`,
-			}}),
+			command.HelpCommand(helpTopics),
 			command.VersionCommand(),
 		},
 	}
