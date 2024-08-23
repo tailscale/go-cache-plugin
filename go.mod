@@ -7,11 +7,16 @@ toolchain go1.23.0
 require (
 	github.com/aws/aws-sdk-go-v2/config v1.27.28
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.59.0
+	github.com/creachadair/atomicfile v0.3.4
 	github.com/creachadair/command v0.1.13
 	github.com/creachadair/flax v0.0.1
-	github.com/creachadair/gocache v0.0.0-20240822140526-6ffd1bf075ac
+	github.com/creachadair/gocache v0.0.0-20240823022559-6258109e93d6
+	github.com/creachadair/mds v0.17.1
 	github.com/creachadair/taskgroup v0.9.1
+	github.com/goproxy/goproxy v0.17.2
+	golang.org/x/sync v0.7.0
 	honnef.co/go/tools v0.5.1
+	tailscale.com v1.72.1
 )
 
 require (
@@ -32,10 +37,20 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.26.5 // indirect
 	github.com/aws/aws-sdk-go-v2/service/sts v1.30.4 // indirect
 	github.com/aws/smithy-go v1.20.4 // indirect
-	github.com/creachadair/atomicfile v0.3.4 // indirect
-	github.com/creachadair/mds v0.17.1 // indirect
-	golang.org/x/exp/typeparams v0.0.0-20231108232855-2478ac86f678 // indirect
-	golang.org/x/mod v0.17.0 // indirect
-	golang.org/x/sync v0.7.0 // indirect
-	golang.org/x/tools v0.21.1-0.20240531212143-b6235391adb3 // indirect
+	github.com/beorn7/perks v1.0.1 // indirect
+	github.com/cespare/xxhash/v2 v2.2.0 // indirect
+	github.com/go-json-experiment/json v0.0.0-20231102232822-2e55bd4e08b0 // indirect
+	github.com/google/uuid v1.6.0 // indirect
+	github.com/prometheus/client_golang v1.19.1 // indirect
+	github.com/prometheus/client_model v0.5.0 // indirect
+	github.com/prometheus/common v0.48.0 // indirect
+	github.com/prometheus/procfs v0.12.0 // indirect
+	go4.org/mem v0.0.0-20220726221520-4f986261bf13 // indirect
+	go4.org/netipx v0.0.0-20231129151722-fdeea329fbba // indirect
+	golang.org/x/crypto v0.25.0 // indirect
+	golang.org/x/exp/typeparams v0.0.0-20240119083558-1b970713d09a // indirect
+	golang.org/x/mod v0.19.0 // indirect
+	golang.org/x/sys v0.22.0 // indirect
+	golang.org/x/tools v0.23.0 // indirect
+	google.golang.org/protobuf v1.33.0 // indirect
 )
