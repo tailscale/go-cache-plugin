@@ -180,7 +180,8 @@ func runServe(env *command.Env) error {
 				GoBin: "/bin/false",
 				Env:   []string{"GOPROXY=https://proxy.golang.org"},
 			},
-			Cacher: cacher,
+			Cacher:        cacher,
+			ProxiedSumDBs: []string{"sum.golang.org"}, // default, see below
 		}
 		if serveFlags.SumDB != "" {
 			proxy.ProxiedSumDBs = strings.Split(serveFlags.SumDB, ",")
