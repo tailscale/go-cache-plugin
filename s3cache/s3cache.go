@@ -86,6 +86,7 @@ type Cache struct {
 	putS3Found   expvar.Int // count of objects not written to S3 because they were already present
 	putS3Action  expvar.Int // count of actions written to S3
 	putS3Object  expvar.Int // count of objects written to S3
+	putS3Error   expvar.Int // count of errors writing to S3
 }
 
 func (s *Cache) init() {
@@ -200,9 +201,8 @@ func (s *Cache) Close(ctx context.Context) error {
 	if s.push != nil {
 		gocache.Logf(ctx, "waiting for uploads...")
 		wstart := time.Now()
-		err := s.push.Wait()
-		gocache.Logf(ctx, "uploads complete (%v elapsed, err=%v)",
-			time.Since(wstart).Round(10*time.Microsecond), err)
+		s.push.Wait()
+		gocache.Logf(ctx, "uploads complete (%v elapsed)", time.Since(wstart).Round(10*time.Microsecond))
 	}
 	return nil
 }
@@ -216,6 +216,7 @@ func (s *Cache) SetMetrics(_ context.Context, m *expvar.Map) {
 	m.Set("put_s3_found", &s.putS3Found)
 	m.Set("put_s3_action", &s.putS3Action)
 	m.Set("put_s3_object", &s.putS3Object)
+	m.Set("put_s3_error", &s.putS3Error)
 }
 
 // maybePutObject writes the specified object contents to S3 if there is not
@@ -248,6 +249,7 @@ func (s *Cache) maybePutObject(ctx context.Context, objectID, diskPath, etag str
 		Key:    s.objectKey(objectID),
 		Body:   f,
 	}); err != nil {
+		s.putS3Error.Add(1)
 		gocache.Logf(ctx, "[s3] put object %s: %v", objectID, err)
 		return fi.ModTime(), err
 	}
