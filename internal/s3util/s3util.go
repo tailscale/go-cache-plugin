@@ -16,7 +16,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 )
 
-// IsNntExist reports whether err is an error indicating the requested resource
+// IsNotExist reports whether err is an error indicating the requested resource
 // was not found, taking into account S3 and standard library types.
 func IsNotExist(err error) bool {
 	var notFound *types.NotFound
