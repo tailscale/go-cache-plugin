@@ -4,7 +4,6 @@ package s3cache
 
 import (
 	"context"
-	"crypto/md5"
 	"errors"
 	"expvar"
 	"fmt"
@@ -153,12 +152,10 @@ func (s *Cache) Put(ctx context.Context, obj gocache.Object) (diskPath string, _
 	s.init()
 
 	// Compute an etag so we can do a conditional put on the object data.
-	//
-	// Note: We use MD5 here because the S3 API requires it for the ETag, we do
-	// not rely on it as a secure checksum. The toolchain verifies the content
-	// address against the bits we actually store.
-	hash := md5.New()
-	obj.Body = io.TeeReader(obj.Body, hash)
+	// We do not rely on it as a secure checksum. The toolchain verifies the
+	// content address against the bits we actually store.
+	etr := s3util.NewETagReader(obj.Body)
+	obj.Body = etr
 
 	diskPath, err := s.Local.Put(ctx, obj)
 	if err != nil {
@@ -177,8 +174,7 @@ func (s *Cache) Put(ctx context.Context, obj gocache.Object) (diskPath string, _
 
 		// Stage 1: Maybe write the object. Do this before writing the action
 		// record so we are less likely to get a spurious miss later.
-		etag := fmt.Sprintf("%x", hash.Sum(nil))
-		mtime, err := s.maybePutObject(sctx, obj.ObjectID, diskPath, etag)
+		mtime, err := s.maybePutObject(sctx, obj.ObjectID, diskPath, etr.ETag())
 		if err != nil {
 			return err
 		}

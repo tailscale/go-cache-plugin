@@ -4,7 +4,11 @@ package s3util
 import (
 	"cmp"
 	"context"
+	"crypto/md5"
 	"errors"
+	"fmt"
+	"hash"
+	"io"
 	"os"
 
 	"github.com/aws/aws-sdk-go-v2/config"
@@ -45,3 +49,26 @@ func BucketRegion(ctx context.Context, bucket string) (string, error) {
 	}
 	return cmp.Or(string(loc.LocationConstraint), defaultRegion), nil
 }
+
+// NewETagReader returns a new S3 ETag reader for the contents of r.
+func NewETagReader(r io.Reader) ETagReader {
+	// Note: We use MD5 here because the S3 API requires it for an ETag, we do
+	// not rely on it as a secure checksum.
+	h := md5.New()
+	return ETagReader{r: io.TeeReader(r, h), hash: h}
+}
+
+// ETagReader implements the [io.Reader] interface by delegating to a nested
+// reader, Once the contents are completely read, the ETag method returns
+// a correctly-formatted S3 ETag for the contents.
+type ETagReader struct {
+	r    io.Reader
+	hash hash.Hash
+}
+
+// Read satisfies [io.Reader] by delegating to the wrapped reader.
+func (e ETagReader) Read(data []byte) (int, error) { return e.r.Read(data) }
+
+// ETag returns a correctly-formatted S3 etag for the contents of e that have
+// been read so far.
+func (e ETagReader) ETag() string { return fmt.Sprintf("%x", e.hash.Sum(nil)) }
