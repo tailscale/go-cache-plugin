@@ -59,8 +59,8 @@ func NewETagReader(r io.Reader) ETagReader {
 }
 
 // ETagReader implements the [io.Reader] interface by delegating to a nested
-// reader, Once the contents are completely read, the ETag method returns
-// a correctly-formatted S3 ETag for the contents.
+// reader. The ETag method returns a correctly-formatted S3 ETag for all the
+// data that have been read so far (initially none).
 type ETagReader struct {
 	r    io.Reader
 	hash hash.Hash
