@@ -19,12 +19,9 @@ import (
 // IsNotExist reports whether err is an error indicating the requested resource
 // was not found, taking into account S3 and standard library types.
 func IsNotExist(err error) bool {
-	var notFound *types.NotFound
-	if errors.As(err, &notFound) {
-		return true
-	}
-	var noSuchKey *types.NoSuchKey
-	if errors.As(err, &noSuchKey) {
+	var e1 *types.NotFound
+	var e2 *types.NoSuchKey
+	if errors.As(err, &e1) || errors.As(err, &e2) {
 		return true
 	}
 	return errors.Is(err, os.ErrNotExist)
