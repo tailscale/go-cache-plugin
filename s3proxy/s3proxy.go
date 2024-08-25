@@ -144,8 +144,9 @@ func (c *Cacher) Get(ctx context.Context, name string) (_ io.ReadCloser, oerr er
 	}
 
 	// Check whether the file already exists locally.
-	if rc, err := openReader(path); err == nil {
+	if rc, size, err := openReader(path); err == nil {
 		c.getLocalHit.Add(1)
+		c.getLocalBytes.Add(size)
 		return rc, nil
 	} else if errors.Is(err, os.ErrNotExist) {
 		c.getLocalMiss.Add(1)
@@ -178,7 +179,8 @@ func (c *Cacher) Get(ctx context.Context, name string) (_ io.ReadCloser, oerr er
 	if _, err := c.putLocal(ctx, name, path, obj.Body); err != nil {
 		return nil, err
 	}
-	return openReader(path)
+	rc, _, err := openReader(path)
+	return rc, err
 }
 
 // putLocal reports whether the specified path already exists in the local
@@ -311,12 +313,12 @@ func (c *Cacher) vlogf(msg string, args ...any) {
 	}
 }
 
-func openReader(path string) (io.ReadCloser, error) {
+func openReader(path string) (_ io.ReadCloser, size int64, _ error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
-	return io.NopCloser(bytes.NewReader(data)), nil
+	return io.NopCloser(bytes.NewReader(data)), int64(len(data)), nil
 }
 
 func openFileSize(path string) (io.ReadCloser, int64, error) {
