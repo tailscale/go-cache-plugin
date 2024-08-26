@@ -82,9 +82,10 @@ export GOPROXY=http://localhost:5970   # use the --modcache address
 If you want to also proxy queries to `sum.golang.org`, also add:
 
 ```sh
-export GOSUMDB='sum.golang.org http://locahost:5970'
+export GOSUMDB='sum.golang.org http://locahost:5970/sumdb/sum.golang.org'
 ```
 
 ## References
 
 - [Cache plugin proposal](https://github.com/golang/go/issues/59719)
+- [Module proxy documentation](proxy.golang.org)
