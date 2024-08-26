@@ -74,7 +74,7 @@ type Cacher struct {
 	Logf func(string, ...any)
 
 	// LogRequests, if true, enables detailed (but noisy) debug logging of all
-	// requests handled by the cache.
+	// requests handled by the cache. Logs are written to Logf.
 	//
 	// Each result is presented in the format:
 	//
