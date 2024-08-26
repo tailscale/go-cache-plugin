@@ -76,7 +76,7 @@ go-cache-plugin serve \
 To tell the Go toolchain about the proxy, set:
 
 ```sh
-export GOPROXY=http://localhost:5970   # use the --modcache address
+export GOPROXY=http://localhost:5970   # use the --modproxy address
 ```
 
 If you want to also proxy queries to `sum.golang.org`, also add:
