@@ -78,7 +78,7 @@ type Cacher struct {
 	//
 	// Each result is presented in the format:
 	//
-	//    B <op> "<name>" (<digest)
+	//    B <op> "<name>" (<digest>)
 	//    E <op> "<name>", err=<error>, <time> elapsed
 	//
 	// Where the operations are "GET" and "PUT". The "B" line is when the
