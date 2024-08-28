@@ -20,7 +20,6 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/creachadair/atomicfile"
-	"github.com/creachadair/mds/value"
 	"github.com/creachadair/taskgroup"
 	"github.com/goproxy/goproxy"
 	"github.com/tailscale/go-cache-plugin/internal/s3util"
@@ -98,6 +97,7 @@ type Cacher struct {
 	tasks    *taskgroup.Group
 	start    func(taskgroup.Task) *taskgroup.Group
 	sema     *semaphore.Weighted
+	client   *s3util.Client
 
 	pathError     expvar.Int // errors constructing file paths
 	getRequest    expvar.Int // total number of Get requests
@@ -125,6 +125,7 @@ func (c *Cacher) init() {
 		}
 		c.tasks, c.start = taskgroup.New(nil).Limit(nt)
 		c.sema = semaphore.NewWeighted(int64(nt))
+		c.client = &s3util.Client{Client: c.S3Client, Bucket: c.S3Bucket}
 	})
 }
 
@@ -161,22 +162,19 @@ func (c *Cacher) Get(ctx context.Context, name string) (_ io.ReadCloser, oerr er
 	}
 	defer c.sema.Release(1)
 
-	obj, err := c.S3Client.GetObject(ctx, &s3.GetObjectInput{
-		Bucket: &c.S3Bucket,
-		Key:    value.Ptr(c.makeKey(hash)),
-	})
-	if s3util.IsNotExist(err) {
+	obj, err := c.client.Get(ctx, c.makeKey(hash))
+	if errors.Is(err, fs.ErrNotExist) {
 		c.getFaultMiss.Add(1)
-		return nil, fmt.Errorf("%s: %w", name, fs.ErrNotExist)
+		return nil, err
 	} else if err != nil {
 		c.getFaultError.Add(1)
 		return nil, err
 	}
+	defer obj.Close()
 	c.getFaultHit.Add(1)
 	c.vlogf("mc F GET %q hit (%s)", name, hash)
-	defer obj.Body.Close()
 
-	if _, err := c.putLocal(ctx, name, path, obj.Body); err != nil {
+	if _, err := c.putLocal(ctx, name, path, obj); err != nil {
 		return nil, err
 	}
 	rc, _, err := openReader(path)
@@ -233,13 +231,7 @@ func (c *Cacher) Put(ctx context.Context, name string, data io.ReadSeeker) (oerr
 		sctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 1*time.Minute)
 		defer cancel()
 
-		_, err := c.S3Client.PutObject(sctx, &s3.PutObjectInput{
-			Bucket:        &c.S3Bucket,
-			Key:           value.Ptr(c.makeKey(hash)),
-			Body:          f,
-			ContentLength: &size,
-		})
-		if err != nil {
+		if err := c.client.Put(sctx, c.makeKey(hash), f); err != nil {
 			c.putS3Error.Add(1)
 			c.logf("[s3] put %q failed: %v", name, err)
 		} else {
