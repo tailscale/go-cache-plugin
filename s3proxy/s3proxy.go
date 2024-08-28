@@ -18,7 +18,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/creachadair/atomicfile"
 	"github.com/creachadair/taskgroup"
 	"github.com/goproxy/goproxy"
@@ -53,11 +52,7 @@ type Cacher struct {
 
 	// S3Client is the S3 client used to read and write cache entries to the
 	// backing store. It must be non-nil.
-	S3Client *s3.Client
-
-	// S3Bucket is the name of the S3 bucket where cache entries are stored.
-	// It must be non-empty.
-	S3Bucket string
+	S3Client *s3util.Client
 
 	// KeyPrefix, if non-empty, is prepended to each key stored into S3, with an
 	// intervening slash.
@@ -97,7 +92,6 @@ type Cacher struct {
 	tasks    *taskgroup.Group
 	start    func(taskgroup.Task) *taskgroup.Group
 	sema     *semaphore.Weighted
-	client   *s3util.Client
 
 	pathError     expvar.Int // errors constructing file paths
 	getRequest    expvar.Int // total number of Get requests
@@ -125,7 +119,6 @@ func (c *Cacher) init() {
 		}
 		c.tasks, c.start = taskgroup.New(nil).Limit(nt)
 		c.sema = semaphore.NewWeighted(int64(nt))
-		c.client = &s3util.Client{Client: c.S3Client, Bucket: c.S3Bucket}
 	})
 }
 
@@ -162,7 +155,7 @@ func (c *Cacher) Get(ctx context.Context, name string) (_ io.ReadCloser, oerr er
 	}
 	defer c.sema.Release(1)
 
-	obj, err := c.client.Get(ctx, c.makeKey(hash))
+	obj, err := c.S3Client.Get(ctx, c.makeKey(hash))
 	if errors.Is(err, fs.ErrNotExist) {
 		c.getFaultMiss.Add(1)
 		return nil, err
@@ -231,7 +224,7 @@ func (c *Cacher) Put(ctx context.Context, name string, data io.ReadSeeker) (oerr
 		sctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 1*time.Minute)
 		defer cancel()
 
-		if err := c.client.Put(sctx, c.makeKey(hash), f); err != nil {
+		if err := c.S3Client.Put(sctx, c.makeKey(hash), f); err != nil {
 			c.putS3Error.Add(1)
 			c.logf("[s3] put %q failed: %v", name, err)
 		} else {
