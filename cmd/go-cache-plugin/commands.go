@@ -24,6 +24,7 @@ import (
 	"github.com/creachadair/gocache/cachedir"
 	"github.com/creachadair/taskgroup"
 	"github.com/goproxy/goproxy"
+	"github.com/tailscale/go-cache-plugin/internal/s3util"
 	"github.com/tailscale/go-cache-plugin/s3cache"
 	"github.com/tailscale/go-cache-plugin/s3proxy"
 	"tailscale.com/tsweb"
@@ -43,7 +44,7 @@ var flags struct {
 	DebugLog      bool          `flag:"debug,default=$GOCACHE_DEBUG,Enable detailed per-request debug logging (noisy)"`
 }
 
-func initCacheServer(env *command.Env) (*gocache.Server, *s3.Client, error) {
+func initCacheServer(env *command.Env) (*gocache.Server, *s3util.Client, error) {
 	switch {
 	case flags.CacheDir == "":
 		return nil, nil, env.Usagef("you must provide a --cache-dir")
@@ -67,10 +68,13 @@ func initCacheServer(env *command.Env) (*gocache.Server, *s3.Client, error) {
 
 	vprintf("local cache directory: %s", flags.CacheDir)
 	vprintf("S3 cache bucket %q (%s)", flags.S3Bucket, region)
+	client := &s3util.Client{
+		Client: s3.NewFromConfig(cfg),
+		Bucket: flags.S3Bucket,
+	}
 	cache := &s3cache.Cache{
 		Local:             dir,
-		S3Client:          s3.NewFromConfig(cfg),
-		S3Bucket:          flags.S3Bucket,
+		S3Client:          client,
 		KeyPrefix:         flags.KeyPrefix,
 		MinUploadSize:     flags.MinUploadSize,
 		UploadConcurrency: flags.S3Concurrency,
@@ -94,7 +98,7 @@ func initCacheServer(env *command.Env) (*gocache.Server, *s3.Client, error) {
 		LogRequests: flags.DebugLog,
 	}
 	expvar.Publish("gocache_server", s.Metrics().Get("server"))
-	return s, cache.S3Client, nil
+	return s, client, nil
 }
 
 // runDirect runs a cache communicating on stdin/stdout, for use as a direct
@@ -162,7 +166,6 @@ func runServe(env *command.Env) error {
 		cacher := &s3proxy.Cacher{
 			Local:       modCachePath,
 			S3Client:    s3c,
-			S3Bucket:    flags.S3Bucket,
 			KeyPrefix:   path.Join(flags.KeyPrefix, "module"),
 			MaxTasks:    flags.S3Concurrency,
 			LogRequests: flags.DebugLog,
