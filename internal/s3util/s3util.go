@@ -9,11 +9,13 @@ import (
 	"fmt"
 	"hash"
 	"io"
+	"io/fs"
 	"os"
 
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
+	"github.com/creachadair/mds/value"
 )
 
 // IsNotExist reports whether err is an error indicating the requested resource
@@ -69,3 +71,96 @@ func (e ETagReader) Read(data []byte) (int, error) { return e.r.Read(data) }
 // ETag returns a correctly-formatted S3 etag for the contents of e that have
 // been read so far.
 func (e ETagReader) ETag() string { return fmt.Sprintf("%x", e.hash.Sum(nil)) }
+
+// Client is a wrapper for an S3 client that provides basic read and write
+// facilities to a specific bucket.
+type Client struct {
+	Client *s3.Client
+	Bucket string
+}
+
+// Put writes the specified data to S3 under the given key.
+func (c *Client) Put(ctx context.Context, key string, data io.Reader) error {
+	// Attempt to find the size of the input to send as a content length.
+	// If we can't do this, let the SDK figure it out.
+	var sizePtr *int64
+	switch t := data.(type) {
+	case sizer:
+		sizePtr = value.Ptr(t.Size())
+	case statter:
+		fi, err := t.Stat()
+		if err == nil {
+			sizePtr = value.Ptr(fi.Size())
+		}
+	case io.Seeker:
+		v, err := t.Seek(0, io.SeekEnd)
+		if err == nil {
+			sizePtr = &v
+
+			// Try to seek back to the beginning. If we cannot do this, fail out
+			// so we don't try to write a partial object.
+			_, err = t.Seek(0, io.SeekStart)
+			if err != nil {
+				return fmt.Errorf("[unexpected] seek failed: %w", err)
+			}
+		}
+	}
+	_, err := c.Client.PutObject(ctx, &s3.PutObjectInput{
+		Bucket:        &c.Bucket,
+		Key:           &key,
+		Body:          data,
+		ContentLength: sizePtr,
+	})
+	return err
+}
+
+// Get returns the contents of the specified key from S3. On success, the
+// returned reader contains the contents of the object, and the caller must
+// close the reader when finished.
+//
+// If the key is not found, the resulting error satisfies [fs.ErrNotExist].
+func (c *Client) Get(ctx context.Context, key string) (io.ReadCloser, error) {
+	rsp, err := c.Client.GetObject(ctx, &s3.GetObjectInput{
+		Bucket: &c.Bucket,
+		Key:    &key,
+	})
+	if err != nil {
+		if IsNotExist(err) {
+			return nil, fmt.Errorf("key %q: %w", key, fs.ErrNotExist)
+		}
+		return nil, err
+	}
+	return rsp.Body, nil
+}
+
+// GetData returns the contents of the specified key from S3. It is a shorthand
+// for calling Get followed by io.ReadAll on the result.
+func (c *Client) GetData(ctx context.Context, key string) ([]byte, error) {
+	rc, err := c.Get(ctx, key)
+	if err != nil {
+		return nil, err
+	}
+	defer rc.Close()
+	return io.ReadAll(rc)
+}
+
+// PutCond writes the specified data to S3 under the given key if the key does
+// not already exist, or if its content differs from the given etag.
+// The etag is an MD5 of the expected contents, encoded as lowercase hex digits.
+// On success, written reports whether the object was written.
+func (c *Client) PutCond(ctx context.Context, key, etag string, data io.Reader) (written bool, _ error) {
+	if _, err := c.Client.HeadObject(ctx, &s3.HeadObjectInput{
+		Bucket:  &c.Bucket,
+		Key:     &key,
+		IfMatch: &etag,
+	}); err == nil {
+		return false, nil
+	}
+	return true, c.Put(ctx, key, data)
+}
+
+// A sizer exports a Size method, e.g., [bytes.Reader] and similar.
+type sizer interface{ Size() int64 }
+
+// A statter exports a Stat method, e.g., [os.File] and similar.
+type statter interface{ Stat() (fs.FileInfo, error) }
