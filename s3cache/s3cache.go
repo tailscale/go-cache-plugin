@@ -17,7 +17,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/creachadair/gocache"
 	"github.com/creachadair/gocache/cachedir"
 	"github.com/creachadair/taskgroup"
@@ -56,11 +55,7 @@ type Cache struct {
 
 	// S3Client is the S3 client used to read and write cache entries to the
 	// backing store. It must be non-nil.
-	S3Client *s3.Client
-
-	// S3Bucket is the name of the S3 bucket where cache entries are stored.
-	// It must be non-empty.
-	S3Bucket string
+	S3Client *s3util.Client
 
 	// KeyPrefix, if non-empty, is prepended to each key stored into S3, with an
 	// intervening slash.
@@ -79,7 +74,6 @@ type Cache struct {
 	initOnce sync.Once
 	push     *taskgroup.Group
 	start    func(taskgroup.Task) *taskgroup.Group
-	client   *s3util.Client
 
 	getLocalHit  expvar.Int // count of Get hits in the local cache
 	getFaultHit  expvar.Int // count of Get hits faulted in from S3
@@ -94,7 +88,6 @@ type Cache struct {
 func (s *Cache) init() {
 	s.initOnce.Do(func() {
 		s.push, s.start = taskgroup.New(nil).Limit(s.uploadConcurrency())
-		s.client = &s3util.Client{Client: s.S3Client, Bucket: s.S3Bucket}
 	})
 }
 
@@ -110,7 +103,7 @@ func (s *Cache) Get(ctx context.Context, actionID string) (objectID, diskPath st
 
 	// Reaching here, either we got a cache miss or an error reading from local.
 	// Try reading the action from S3.
-	action, err := s.client.GetData(ctx, s.actionKey(actionID))
+	action, err := s.S3Client.GetData(ctx, s.actionKey(actionID))
 	if err != nil {
 		if errors.Is(err, fs.ErrNotExist) {
 			s.getFaultMiss.Add(1)
@@ -125,7 +118,7 @@ func (s *Cache) Get(ctx context.Context, actionID string) (objectID, diskPath st
 		return "", "", err
 	}
 
-	object, err := s.client.GetData(ctx, s.objectKey(objectID))
+	object, err := s.S3Client.GetData(ctx, s.objectKey(objectID))
 	if err != nil {
 		// At this point we know the action exists, so if we can't read the
 		// object report it as an error rather than a cache miss.
@@ -178,7 +171,7 @@ func (s *Cache) Put(ctx context.Context, obj gocache.Object) (diskPath string, _
 		}
 
 		// Stage 2: Write the action record.
-		if err := s.client.Put(ctx, s.actionKey(obj.ActionID),
+		if err := s.S3Client.Put(ctx, s.actionKey(obj.ActionID),
 			strings.NewReader(fmt.Sprintf("%s %d", obj.ObjectID, mtime.UnixNano()))); err != nil {
 			gocache.Logf(ctx, "write action %s: %v", obj.ActionID, err)
 			return err
@@ -228,7 +221,7 @@ func (s *Cache) maybePutObject(ctx context.Context, objectID, diskPath, etag str
 		return time.Time{}, err
 	}
 
-	written, err := s.client.PutCond(ctx, s.objectKey(objectID), etag, f)
+	written, err := s.S3Client.PutCond(ctx, s.objectKey(objectID), etag, f)
 	if err != nil {
 		s.putS3Error.Add(1)
 		gocache.Logf(ctx, "[s3] put object %s: %v", objectID, err)
