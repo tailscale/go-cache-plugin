@@ -3,11 +3,12 @@
 package s3cache
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"expvar"
 	"fmt"
-	"io"
+	"io/fs"
 	"os"
 	"path"
 	"runtime"
@@ -78,6 +79,7 @@ type Cache struct {
 	initOnce sync.Once
 	push     *taskgroup.Group
 	start    func(taskgroup.Task) *taskgroup.Group
+	client   *s3util.Client
 
 	getLocalHit  expvar.Int // count of Get hits in the local cache
 	getFaultHit  expvar.Int // count of Get hits faulted in from S3
@@ -92,11 +94,14 @@ type Cache struct {
 func (s *Cache) init() {
 	s.initOnce.Do(func() {
 		s.push, s.start = taskgroup.New(nil).Limit(s.uploadConcurrency())
+		s.client = &s3util.Client{Client: s.S3Client, Bucket: s.S3Bucket}
 	})
 }
 
 // Get implements the corresponding callback of the cache protocol.
 func (s *Cache) Get(ctx context.Context, actionID string) (objectID, diskPath string, _ error) {
+	s.init()
+
 	objID, diskPath, err := s.Local.Get(ctx, actionID)
 	if err == nil && objID != "" && diskPath != "" {
 		s.getLocalHit.Add(1)
@@ -105,12 +110,9 @@ func (s *Cache) Get(ctx context.Context, actionID string) (objectID, diskPath st
 
 	// Reaching here, either we got a cache miss or an error reading from local.
 	// Try reading the action from S3.
-	act, err := s.S3Client.GetObject(ctx, &s3.GetObjectInput{
-		Bucket: &s.S3Bucket,
-		Key:    s.actionKey(actionID),
-	})
+	action, err := s.client.GetData(ctx, s.actionKey(actionID))
 	if err != nil {
-		if s3util.IsNotExist(err) {
+		if errors.Is(err, fs.ErrNotExist) {
 			s.getFaultMiss.Add(1)
 			return "", "", nil // cache miss, OK
 		}
@@ -118,16 +120,12 @@ func (s *Cache) Get(ctx context.Context, actionID string) (objectID, diskPath st
 	}
 
 	// We got an action hit remotely, try to update the local copy.
-	objectID, mtime, err := parseAction(act.Body)
-	act.Body.Close()
+	objectID, mtime, err := parseAction(action)
 	if err != nil {
 		return "", "", err
 	}
 
-	obj, err := s.S3Client.GetObject(ctx, &s3.GetObjectInput{
-		Bucket: &s.S3Bucket,
-		Key:    s.objectKey(objectID),
-	})
+	object, err := s.client.GetData(ctx, s.objectKey(objectID))
 	if err != nil {
 		// At this point we know the action exists, so if we can't read the
 		// object report it as an error rather than a cache miss.
@@ -137,12 +135,11 @@ func (s *Cache) Get(ctx context.Context, actionID string) (objectID, diskPath st
 
 	// Now we should have the body; poke it into the local cache.  Preserve the
 	// modification timestamp recorded with the original action.
-	defer obj.Body.Close()
 	diskPath, err = s.Local.Put(ctx, gocache.Object{
 		ActionID: actionID,
 		ObjectID: objectID,
-		Size:     *obj.ContentLength,
-		Body:     obj.Body,
+		Size:     int64(len(object)),
+		Body:     bytes.NewReader(object),
 		ModTime:  mtime,
 	})
 	return objectID, diskPath, err
@@ -181,11 +178,8 @@ func (s *Cache) Put(ctx context.Context, obj gocache.Object) (diskPath string, _
 		}
 
 		// Stage 2: Write the action record.
-		if _, err := s.S3Client.PutObject(sctx, &s3.PutObjectInput{
-			Bucket: &s.S3Bucket,
-			Key:    s.actionKey(obj.ActionID),
-			Body:   strings.NewReader(fmt.Sprintf("%s %d", obj.ObjectID, mtime.UnixNano())),
-		}); err != nil {
+		if err := s.client.Put(ctx, s.actionKey(obj.ActionID),
+			strings.NewReader(fmt.Sprintf("%s %d", obj.ObjectID, mtime.UnixNano()))); err != nil {
 			gocache.Logf(ctx, "write action %s: %v", obj.ActionID, err)
 			return err
 		}
@@ -234,39 +228,28 @@ func (s *Cache) maybePutObject(ctx context.Context, objectID, diskPath, etag str
 		return time.Time{}, err
 	}
 
-	key := s.objectKey(objectID)
-	if _, err := s.S3Client.HeadObject(ctx, &s3.HeadObjectInput{
-		Bucket:  &s.S3Bucket,
-		Key:     key,
-		IfMatch: &etag,
-	}); err == nil {
-		s.putS3Found.Add(1)
-		return fi.ModTime(), nil // already present and matching
-	}
-
-	if _, err := s.S3Client.PutObject(ctx, &s3.PutObjectInput{
-		Bucket: &s.S3Bucket,
-		Key:    s.objectKey(objectID),
-		Body:   f,
-	}); err != nil {
+	written, err := s.client.PutCond(ctx, s.objectKey(objectID), etag, f)
+	if err != nil {
 		s.putS3Error.Add(1)
 		gocache.Logf(ctx, "[s3] put object %s: %v", objectID, err)
 		return fi.ModTime(), err
+	}
+	if written {
+		s.putS3Found.Add(1)
+		return fi.ModTime(), nil // already present and matching
 	}
 	s.putS3Object.Add(1)
 	return fi.ModTime(), nil
 }
 
 // makeKey assembles a complete key from the specified parts, including the key
-// prefix if one is defined. The result is a pointer for compatibility with the
-// S3 client library.
-func (s *Cache) makeKey(parts ...string) *string {
-	key := path.Join(s.KeyPrefix, path.Join(parts...))
-	return &key
+// prefix if one is defined.
+func (s *Cache) makeKey(parts ...string) string {
+	return path.Join(s.KeyPrefix, path.Join(parts...))
 }
 
-func (s *Cache) actionKey(id string) *string { return s.makeKey("action", id[:2], id) }
-func (s *Cache) objectKey(id string) *string { return s.makeKey("object", id[:2], id) }
+func (s *Cache) actionKey(id string) string { return s.makeKey("action", id[:2], id) }
+func (s *Cache) objectKey(id string) string { return s.makeKey("object", id[:2], id) }
 
 func (s *Cache) uploadConcurrency() int {
 	if s.UploadConcurrency <= 0 {
@@ -275,11 +258,7 @@ func (s *Cache) uploadConcurrency() int {
 	return s.UploadConcurrency
 }
 
-func parseAction(r io.Reader) (objectID string, mtime time.Time, _ error) {
-	data, err := io.ReadAll(r)
-	if err != nil {
-		return "", time.Time{}, err
-	}
+func parseAction(data []byte) (objectID string, mtime time.Time, _ error) {
 	fs := strings.Fields(string(data))
 	if len(fs) != 2 {
 		return "", time.Time{}, errors.New("invalid action record")
