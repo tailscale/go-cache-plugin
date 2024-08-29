@@ -105,11 +105,13 @@ type Server struct {
 	reqFaultMiss expvar.Int // miss in remote (S3) cache
 	reqForward   expvar.Int // request forwarded directly to upstream
 	rspSave      expvar.Int // successful response saved in local cache
+	rspSaveMem   expvar.Int // response saved in memory cache
 	rspSaveError expvar.Int // error saving to local cache
 	rspSaveBytes expvar.Int // bytes written to local cache
 	rspPush      expvar.Int // successful response saved in S3
 	rspPushError expvar.Int // error saving to S3
 	rspPushBytes expvar.Int // bytes written to S3
+	rspNotCached expvar.Int // response not cached anywhere
 }
 
 func (s *Server) init() {
@@ -132,11 +134,13 @@ func (s *Server) Metrics() *expvar.Map {
 	m.Set("req_fault_miss", &s.reqFaultMiss)
 	m.Set("req_forward", &s.reqForward)
 	m.Set("rsp_save", &s.rspSave)
+	m.Set("rsp_save_memory", &s.rspSaveMem)
 	m.Set("rsp_save_error", &s.rspSaveError)
 	m.Set("rsp_save_bytes", &s.rspSaveBytes)
 	m.Set("rsp_push", &s.rspPush)
 	m.Set("rsp_push_error", &s.rspPushError)
 	m.Set("rsp_push_bytes", &s.rspPushBytes)
+	m.Set("rsp_not_cached", &s.rspNotCached)
 	return m
 }
 
@@ -197,6 +201,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			if !isVolatile && !s.canCacheResponse(rsp) {
 				// A response we cannot cache at all.
 				setXCacheInfo(rsp.Header, "fetch, uncached", "")
+				s.rspNotCached.Add(1)
 				return nil
 			}
 
@@ -212,6 +217,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				updateCache = func() {
 					body := buf.Bytes()
 					s.cacheStoreMemory(hash, maxAge, rsp.Header, body)
+					s.rspSaveMem.Add(1)
 
 					// N.B. Don't persist on disk or in S3.
 				}
