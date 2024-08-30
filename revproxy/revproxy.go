@@ -36,17 +36,13 @@ import (
 // Server is a caching reverse proxy server that caches successful responses to
 // GET requests for certain designated domains.
 //
-// A request URL must have the form:
+// The host field of the request URL must match one of the configured targets.
+// If not, the request is rejected with HTTP 502 (Bad Gateway).  Otherwise, the
+// request is forwarded.  A successful response will be cached if the server's
+// Cache-Control does not include "no-store", and does include "immutable".
 //
-//	<base-url>/<host>/<path>[?query][#fragment]
-//
-// If the host matches one of the configured targets, the URL is rewritten as:
-//
-//	https://<host>/<path>[?query][#fragment]
-//
-// and the request is forwarded. Otherwise the request is rejected (HTTP 502).
-// A successful response will be cached if the Cache-Control response from the
-// server does not include "no-store", and does include "immutable".
+// In addition, a successful response that is not immutable and specifies a
+// max-age will be cached temporarily in-memory, up to the maximum of 1h.
 //
 // # Cache Format
 //
@@ -150,7 +146,8 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	s.reqReceived.Add(1)
 
 	// Check whether this request is to a target we are permitted to proxy for.
-	if !s.checkTarget(r.URL) {
+	if !hostMatchesTarget(r.URL.Host, s.Targets) {
+		s.logf("reject proxy request for non-target %q", r.URL)
 		http.Error(w, http.StatusText(http.StatusBadGateway), http.StatusBadGateway)
 		return
 	}
@@ -244,22 +241,10 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	updateCache()
 }
 
-// rewriteURL constructs a rewritten request URL based on u, by extracting the
-// target from the path. Precondition: The target is valid (see checkTarget).
-func rewriteURL(u *url.URL) *url.URL {
-	target, rest := parseTarget(u)
-	return &url.URL{
-		Scheme:   "https",
-		Host:     target,
-		Path:     rest,
-		RawQuery: u.RawQuery,
-		Fragment: u.Fragment,
-	}
-}
-
 // rewriteRequest rewrites the inbound request for routing to a target.
 func (s *Server) rewriteRequest(pr *httputil.ProxyRequest) {
-	pr.Out.URL = rewriteURL(pr.In.URL)
+	pr.Out.URL = pr.In.URL
+	pr.Out.URL.Scheme = "https"
 	pr.Out.Host = pr.Out.URL.Host
 }
 
@@ -280,25 +265,14 @@ func (s *Server) logf(msg string, args ...any) {
 	}
 }
 
-// parseTarget splits the first path component from the given URL and returns
-// it and the remainder of the path.
-func parseTarget(u *url.URL) (target, rest string) {
-	target, rest = strings.TrimPrefix(u.Path, "/"), "/"
-	if i := strings.Index(target, "/"); i >= 0 {
-		target, rest = target[:i], target[i:]
-	}
-	return
-}
-
-// checkTarget reports whether the specified request URL matches one of the
-// configured targets for the proxy.
-func (s *Server) checkTarget(u *url.URL) bool {
-	prefix, _ := parseTarget(u)
-	return slices.ContainsFunc(s.Targets, func(s string) bool {
-		if s == prefix {
+func hostMatchesTarget(host string, targets []string) bool {
+	return slices.ContainsFunc(targets, func(s string) bool {
+		if s == host {
 			return true
 		} else if tail, ok := strings.CutPrefix(s, "*"); ok {
-			return strings.HasSuffix(prefix, tail) || prefix == strings.TrimPrefix(tail, ".")
+			if strings.HasSuffix(host, tail) || host == strings.TrimPrefix(tail, ".") {
+				return true
+			}
 		}
 		return false
 	})
@@ -306,7 +280,7 @@ func (s *Server) checkTarget(u *url.URL) bool {
 
 // canCacheRequest reports whether r is a request whose response can be cached.
 func (s *Server) canCacheRequest(r *http.Request) bool {
-	return r.Method == "GET" && !slices.Contains(splitCacheControl(r.Header), "no-cache")
+	return r.Method == "GET" && !slices.Contains(splitCacheControl(r.Header), "no-store")
 }
 
 // canCacheResponse reports whether r is a response whose body can be cached.
@@ -344,8 +318,7 @@ func (s *Server) canMemoryCache(rsp *http.Response) (time.Duration, bool) {
 
 // hashRequest generates the storage digest for the specified request URL.
 func hashRequestURL(u *url.URL) string {
-	ru := rewriteURL(u).String()
-	return fmt.Sprintf("%x", sha256.Sum256([]byte(ru)))
+	return fmt.Sprintf("%x", sha256.Sum256([]byte(u.String())))
 }
 
 // writeCachedResponse generates an HTTP response for a cached result using the

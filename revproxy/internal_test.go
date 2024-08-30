@@ -1,14 +1,11 @@
 package revproxy
 
 import (
-	"net/url"
 	"testing"
 )
 
 func TestCheckTarget(t *testing.T) {
-	s := &Server{
-		Targets: []string{"foo.com", "*.bar.com"},
-	}
+	testTargets := []string{"foo.com", "*.bar.com"}
 	tests := []struct {
 		input string
 		want  bool
@@ -22,8 +19,7 @@ func TestCheckTarget(t *testing.T) {
 		{"some.other.bar.com", true},
 	}
 	for _, tc := range tests {
-		u := &url.URL{Host: "localhost", Path: tc.input}
-		if got := s.checkTarget(u); got != tc.want {
+		if got := hostMatchesTarget(tc.input, testTargets); got != tc.want {
 			t.Errorf("Check %q: got %v, want %v", tc.input, got, tc.want)
 		}
 	}
