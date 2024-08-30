@@ -91,10 +91,24 @@ func (s *Server) cacheStoreMemory(hash string, maxAge time.Duration, hdr http.He
 	s.mcacheMu.Lock()
 	defer s.mcacheMu.Unlock()
 	s.mcache.Add(hash, memCacheEntry{
-		header:  hdr,
+		header:  trimCacheHeader(hdr),
 		body:    body,
 		expires: time.Now().Add(maxAge),
 	})
+}
+
+var keepHeader = []string{
+	"Cache-Control", "Content-Type", "Date", "Etag",
+}
+
+func trimCacheHeader(h http.Header) http.Header {
+	out := make(http.Header)
+	for _, name := range keepHeader {
+		if v := h.Get(name); v != "" {
+			out.Set(name, v)
+		}
+	}
+	return out
 }
 
 // parseCacheDbject parses cached object data to extract the body and headers.

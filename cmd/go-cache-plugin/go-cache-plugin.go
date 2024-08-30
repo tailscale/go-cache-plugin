@@ -46,8 +46,16 @@ serving directly over stdin/stdout. The "connect" command adapts the direct
 interface to this one.
 
 By default, only the build cache is exported via the --socket path.
-If --modcache is set, the server also exports a caching module proxy at the
-specified address.`,
+
+If --http is set, the server also exports an HTTP server at that address.
+By default, this exports only /debug endpoints, including metrics.
+When --http is enabled, the following options are available:
+
+- When --modcache is true, the server also exports a caching module proxy at
+  http://<host>:<port>/mod/.
+
+- When --revproxy is set, the server also hosts a caching reverse proxy for the
+  specified hosts at http://<host>:<port>/revproxy.`,
 
 				SetFlags: command.Flags(flax.MustBind, &serveFlags),
 				Run:      command.Adapt(runServe),

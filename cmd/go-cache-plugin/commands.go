@@ -120,9 +120,9 @@ func runDirect(env *command.Env) error {
 
 var serveFlags struct {
 	Socket   string `flag:"socket,default=$GOCACHE_SOCKET,Socket path (required)"`
-	ModProxy string `flag:"modproxy,default=$GOCACHE_MODPROXY,Module proxy service address ([host]:port)"`
-	RevProxy string `flag:"revproxy,default=$GOCACHE_REVPROXY,Reverse proxy service address ([host]:port)"`
-	Targets  string `flag:"revproxy-targets,default=$GOCACHE_REVPROXY_TARGETS,Reverse proxy targets (comma-separated)"`
+	HTTP     string `flag:"http,default=$GOCACHE_HTTP,HTTP service address ([host]:port)"`
+	ModProxy bool   `flag:"modproxy,default=$GOCACHE_MODPROXY,Enable a Go module proxy (requires --http)"`
+	RevProxy string `flag:"revproxy,default=$GOCACHE_REVPROXY,Reverse proxy these hosts (comma-separated)"`
 	SumDB    string `flag:"sumdb,default=$GOCACHE_SUMDB,SumDB servers to proxy for (comma-separated)"`
 }
 
@@ -160,8 +160,30 @@ func runServe(env *command.Env) error {
 		lst.Close()
 	}))
 
+	// If an HTTP server is enabled, start it up with debug routes.
+	// If enabled, the module proxy and reverse cache attach to mux below.
+	var mux *http.ServeMux
+	if serveFlags.HTTP != "" {
+		mux = http.NewServeMux()
+		tsweb.Debugger(mux)
+		srv := &http.Server{
+			Addr:    serveFlags.HTTP,
+			Handler: mux,
+		}
+		g.Go(srv.ListenAndServe)
+		vprintf("started HTTP server at %q", serveFlags.HTTP)
+		g.Go(taskgroup.NoError(func() {
+			<-ctx.Done()
+			vprintf("signal received, stopping HTTP service")
+			srv.Shutdown(context.Background())
+		}))
+	}
+
 	// If a module proxy is enabled, start it.
-	if serveFlags.ModProxy != "" {
+	if serveFlags.ModProxy {
+		if mux == nil {
+			return env.Usagef("you must set --http to enable --modproxy")
+		}
 		modCachePath := filepath.Join(flags.CacheDir, "module")
 		if err := os.MkdirAll(modCachePath, 0700); err != nil {
 			lst.Close()
@@ -190,33 +212,19 @@ func runServe(env *command.Env) error {
 			Cacher:        cacher,
 			ProxiedSumDBs: []string{"sum.golang.org"}, // default, see below
 		}
+		vprintf("enabling Go module proxy")
 		if serveFlags.SumDB != "" {
 			proxy.ProxiedSumDBs = strings.Split(serveFlags.SumDB, ",")
 			vprintf("enabling sum DB proxy for %s", strings.Join(proxy.ProxiedSumDBs, ", "))
 		}
 		expvar.Publish("modcache", cacher.Metrics())
-
-		// Run an HTTP server exporting the proxy and debug metrics.
-		mux := http.NewServeMux()
-		mux.Handle("/", proxy)
-		tsweb.Debugger(mux)
-		srv := &http.Server{
-			Addr:    serveFlags.ModProxy,
-			Handler: mux,
-		}
-		g.Go(srv.ListenAndServe)
-		vprintf("started module proxy at %q", serveFlags.ModProxy)
-		g.Go(taskgroup.NoError(func() {
-			<-ctx.Done()
-			vprintf("signal received, stopping module proxy")
-			srv.Shutdown(context.Background())
-		}))
+		mux.Handle("/mod/", http.StripPrefix("/mod", proxy))
 	}
 
 	// If a reverse proxy is enabled, start it.
 	if serveFlags.RevProxy != "" {
-		if serveFlags.Targets == "" {
-			return env.Usagef("must provide --revproxy-targets when --revproxy is set")
+		if mux == nil {
+			return env.Usagef("you must set --http to enable --revproxy")
 		}
 		revCachePath := filepath.Join(flags.CacheDir, "revproxy")
 		if err := os.MkdirAll(revCachePath, 0700); err != nil {
@@ -224,30 +232,15 @@ func runServe(env *command.Env) error {
 			return fmt.Errorf("create revproxy cache: %w", err)
 		}
 		proxy := &revproxy.Server{
-			Targets:   strings.Split(serveFlags.Targets, ","),
+			Targets:   strings.Split(serveFlags.RevProxy, ","),
 			Local:     revCachePath,
 			S3Client:  s3c,
 			KeyPrefix: path.Join(flags.KeyPrefix, "revproxy"),
 			Logf:      vprintf,
 		}
 		expvar.Publish("revcache", proxy.Metrics())
-
-		mux := http.NewServeMux()
+		vprintf("enabling reverse proxy for %s", strings.Join(proxy.Targets, ", "))
 		mux.Handle("/", proxy)
-		if serveFlags.ModProxy == "" {
-			tsweb.Debugger(mux) // attach debugger if --modproxy doesn't already have it
-		}
-		srv := &http.Server{
-			Addr:    serveFlags.RevProxy,
-			Handler: mux,
-		}
-		g.Go(srv.ListenAndServe)
-		vprintf("started reverse proxy at %q for %s", serveFlags.RevProxy, strings.Join(proxy.Targets, ", "))
-		g.Go(taskgroup.NoError(func() {
-			<-ctx.Done()
-			vprintf("signal received, stopping reverse proxy")
-			srv.Shutdown(context.Background())
-		}))
 	}
 
 	for {
