@@ -63,12 +63,12 @@ Go toolchain expects to talk to the plugin.
 ### Running a Module Proxy
 
 To enable a caching module proxy, use the `--modproxy` flag to `serve`.  The
-module proxy uses HTTP, not the plugin interface:
+module proxy uses HTTP, not the plugin interface, use `--http` to set the address:
 
 ```sh
 go-cache-plugin serve \
    --socket=/tmp/gocache.sock \
-   --modproxy=localhost:5970 \
+   --http=localhost:5970 --modproxy \
    --cache-dir=/tmp/gocache \
    # ... other flags
 ```
@@ -76,13 +76,13 @@ go-cache-plugin serve \
 To tell the Go toolchain about the proxy, set:
 
 ```sh
-export GOPROXY=http://localhost:5970   # use the --modproxy address
+export GOPROXY=http://localhost:5970/mod   # use the --http address
 ```
 
 If you want to also proxy queries to `sum.golang.org`, also add:
 
 ```sh
-export GOSUMDB='sum.golang.org http://locahost:5970/sumdb/sum.golang.org'
+export GOSUMDB='sum.golang.org http://locahost:5970/mod/sumdb/sum.golang.org'
 ```
 
 ## References
