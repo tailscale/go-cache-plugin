@@ -31,7 +31,7 @@ The `go-cache-plugin` program supports two modes of operation:
    This is the default mode of operation, and requires no additional setup.
 
 2. **Server mode**: The program runs as a separate process and the Go toolchain
-   communicates with it over a Unix-domain socket.
+   communicates with it over a local socket.
 
    This mode requires the server to be started up ahead of time, but makes the
    configuration for the toolchain simpler. This mode also permits running an
@@ -42,9 +42,9 @@ The `go-cache-plugin` program supports two modes of operation:
 To run in server mode, use the `serve` subcommand:
 
 ```sh
-# N.B.: The --socket flag is required.
+# N.B.: The --plugin flag is required.
 go-cache-plugin serve \
-   --socket=/tmp/gocache.sock \
+   --plugin=5930 \
    --cache-dir=/tmp/gocache \
    --bucket=some-s3-bucket
 ```
@@ -52,8 +52,9 @@ go-cache-plugin serve \
 To connect to a server running in this mode, use the `connect` subcommand:
 
 ```sh
-# Use the same socket path given to the server's --socket flag.
-export GOCACHEPROG="go-cache-plugin connect /tmp/gocache.sock"
+# Use the same port given to the server's --plugin flag.
+# Mnemonic: 5930 == (Go) (C)ache (P)lugin
+export GOCACHEPROG="go-cache-plugin connect 5930
 go build ./...
 ```
 
@@ -67,7 +68,7 @@ module proxy uses HTTP, not the plugin interface, use `--http` to set the addres
 
 ```sh
 go-cache-plugin serve \
-   --socket=/tmp/gocache.sock \
+   --plugin=5930 \
    --http=localhost:5970 --modproxy \
    --cache-dir=/tmp/gocache \
    # ... other flags

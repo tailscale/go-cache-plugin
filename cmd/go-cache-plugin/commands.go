@@ -13,6 +13,7 @@ import (
 	"os/signal"
 	"path"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"syscall"
 	"time"
@@ -119,7 +120,7 @@ func runDirect(env *command.Env) error {
 }
 
 var serveFlags struct {
-	Socket   string `flag:"socket,default=$GOCACHE_SOCKET,Socket path (required)"`
+	Plugin   int    `flag:"plugin,default=$GOCACHE_PLUGIN,Plugin service port (required)"`
 	HTTP     string `flag:"http,default=$GOCACHE_HTTP,HTTP service address ([host]:port)"`
 	ModProxy bool   `flag:"modproxy,default=$GOCACHE_MODPROXY,Enable a Go module proxy (requires --http)"`
 	RevProxy string `flag:"revproxy,default=$GOCACHE_REVPROXY,Reverse proxy these hosts (comma-separated)"`
@@ -128,10 +129,10 @@ var serveFlags struct {
 
 func noopClose(context.Context) error { return nil }
 
-// runServe runs a cache communicating over a Unix-domain socket.
+// runServe runs a cache communicating over a local TCP socket.
 func runServe(env *command.Env) error {
-	if serveFlags.Socket == "" {
-		return env.Usagef("you must provide a --socket path")
+	if serveFlags.Plugin <= 0 {
+		return env.Usagef("you must provide a --plugin port")
 	}
 
 	// Initialize the cache server. Unlike a direct server, only close down and
@@ -144,11 +145,11 @@ func runServe(env *command.Env) error {
 	s.Close = noopClose
 
 	// Listen for connections from the Go toolchain on the specified socket.
-	lst, err := net.Listen("unix", serveFlags.Socket)
+	lst, err := net.Listen("tcp", fmt.Sprintf("127.0.0.1:%d", serveFlags.Plugin))
 	if err != nil {
 		return fmt.Errorf("listen: %w", err)
 	}
-	defer os.Remove(serveFlags.Socket) // best-effort
+	log.Printf("plugin listening at %q", lst.Addr())
 
 	ctx, cancel := signal.NotifyContext(env.Context(), syscall.SIGINT, syscall.SIGTERM)
 	defer cancel()
@@ -171,7 +172,7 @@ func runServe(env *command.Env) error {
 			Handler: mux,
 		}
 		g.Go(srv.ListenAndServe)
-		vprintf("started HTTP server at %q", serveFlags.HTTP)
+		vprintf("HTTP server listening at %q", serveFlags.HTTP)
 		g.Go(taskgroup.NoError(func() {
 			<-ctx.Done()
 			vprintf("signal received, stopping HTTP service")
@@ -271,30 +272,53 @@ func runServe(env *command.Env) error {
 	return nil
 }
 
-// runConnect implements a direct cache proxy by connecting to a remote server
-// over a Unix-domain socket.
-func runConnect(env *command.Env, socketPath string) error {
-	if socketPath == "" {
-		return env.Usagef("you must provide a socket path")
-	}
-	conn, err := net.Dial("unix", socketPath)
+// runConnect implements a direct cache proxy by connecting to a remote server.
+func runConnect(env *command.Env, plugin string) error {
+	port, err := strconv.Atoi(plugin)
 	if err != nil {
-		return fmt.Errorf("dial socket: %w", err)
+		return fmt.Errorf("invalid plugin port: %w", err)
+	}
+
+	conn, err := net.Dial("tcp", fmt.Sprintf(":%d", port))
+	if err != nil {
+		return fmt.Errorf("dial: %w", err)
 	}
 	start := time.Now()
-	vprintf("connected to %q", socketPath)
+	vprintf("connected to %q", conn.RemoteAddr())
 
 	out := taskgroup.Go(func() error {
-		_, err := io.Copy(os.Stdout, conn)
-		return err
+		defer conn.(*net.TCPConn).CloseWrite() // let the server finish
+		return copy(conn, os.Stdin)
 	})
-
-	_, rerr := io.Copy(conn, os.Stdin)
-	if rerr != nil {
-		vprintf("error sending: %v", rerr)
+	if rerr := copy(os.Stdout, conn); rerr != nil {
+		vprintf("read responses: %v", err)
 	}
-	conn.Close()
 	out.Wait()
+	conn.Close()
 	vprintf("connection closed (%v elapsed)", time.Since(start))
 	return nil
+}
+
+// copy emulates the base case of io.Copy, but does not attempt to use the
+// io.ReaderFrom or io.WriterTo implementations.
+//
+// TODO(creachadair): For some reason io.Copy does not work correctly when r is
+// a pipe (e.g., stdin) and w is a TCP socket. Figure out why.
+func copy(w io.Writer, r io.Reader) error {
+	var buf [4096]byte
+	for {
+		nr, err := r.Read(buf[:])
+		if nr > 0 {
+			if nw, err := w.Write(buf[:nr]); err != nil {
+				return fmt.Errorf("copy to: %w", err)
+			} else if nw < nr {
+				return fmt.Errorf("wrote %d < %d bytes: %w", nw, nr, io.ErrShortWrite)
+			}
+		}
+		if err == io.EOF {
+			return nil
+		} else if err != nil {
+			return fmt.Errorf("copy from: %w", err)
+		}
+	}
 }

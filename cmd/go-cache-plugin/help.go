@@ -47,7 +47,7 @@ settings can be set via environment variables as well as flags.
    --------------------------------------------------------------------
    Flag (serve)       Variable               Format      Default
    --------------------------------------------------------------------
-    --socket          GOCACHE_SOCKET         path        (required)
+    --plugin          GOCACHE_PLUGIN         port        (required)
     --http            GOCACHE_HTTP           [host]:port ""
     --modproxy        GOCACHE_MODPROXY       bool        false
     --revproxy        GOCACHE_REVPROXY       host,...    ""
