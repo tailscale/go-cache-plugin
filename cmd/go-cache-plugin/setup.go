@@ -204,6 +204,9 @@ func initServerCert(env *command.Env, hosts []string) (tls.Certificate, error) {
 		vprintf("WARNING: %v", err)
 	} else {
 		vprintf("installed signing cert in system store")
+
+		// TODO(creachadair): We should probably clean up old expired certs.
+		// This is OK for ephemeral build/CI workers, though.
 	}
 
 	sc, err := tlsutil.NewServerCert(&x509.Certificate{
