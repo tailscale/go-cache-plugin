@@ -45,7 +45,7 @@ import (
 // Cache-Control does not include "no-store", and does include "immutable".
 //
 // In addition, a successful response that is not immutable and specifies a
-// max-age will be cached temporarily in-memory, up to the maximum of 1h.
+// max-age will be cached temporarily in-memory.
 //
 // # Cache Format
 //
@@ -67,10 +67,7 @@ import (
 // the storage key of the cache object.
 type Server struct {
 	// Targets is the list of hosts for which the proxy should forward requests.
-	//
-	// Each target is either a hostname ("host.domain.com"), which matches
-	// hostnames exactly, or a pattern of the form "*.domain.com" which matches
-	// hostnames like "domain.com" and "something.domain.com".
+	// Host names should be fully-qualified ("host.example.com").
 	Targets []string
 
 	// Local is the path of a local cache directory where responses are cached.
@@ -149,8 +146,8 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	s.reqReceived.Add(1)
 
 	// Check whether this request is to a target we are permitted to proxy for.
-	if !hostMatchesTarget(r.URL.Host, s.Targets) {
-		s.logf("reject proxy request for non-target %q", r.URL)
+	if !hostMatchesTarget(r.Host, s.Targets) {
+		s.logf("reject proxy request for non-target %q", r.Host)
 		http.Error(w, http.StatusText(http.StatusBadGateway), http.StatusBadGateway)
 		return
 	}
@@ -273,16 +270,7 @@ func (s *Server) logf(msg string, args ...any) {
 }
 
 func hostMatchesTarget(host string, targets []string) bool {
-	return slices.ContainsFunc(targets, func(s string) bool {
-		if s == host {
-			return true
-		} else if tail, ok := strings.CutPrefix(s, "*"); ok {
-			if strings.HasSuffix(host, tail) || host == strings.TrimPrefix(tail, ".") {
-				return true
-			}
-		}
-		return false
-	})
+	return slices.Contains(targets, host)
 }
 
 // canCacheRequest reports whether r is a request whose response can be cached.
