@@ -5,9 +5,7 @@ package main
 
 import (
 	"context"
-	"crypto/tls"
 	"errors"
-	"expvar"
 	"fmt"
 	"io"
 	"log"
@@ -15,20 +13,13 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
-	"path"
-	"path/filepath"
 	"strconv"
-	"strings"
 	"syscall"
 	"time"
 
 	"github.com/creachadair/command"
 	"github.com/creachadair/gocache"
-	"github.com/creachadair/mhttp/proxyconn"
 	"github.com/creachadair/taskgroup"
-	"github.com/goproxy/goproxy"
-	"github.com/tailscale/go-cache-plugin/revproxy"
-	"github.com/tailscale/go-cache-plugin/s3proxy"
 )
 
 var flags struct {
@@ -104,92 +95,18 @@ func runServe(env *command.Env) error {
 	}))
 
 	// If a module proxy is enabled, start it.
-	var modProxy http.Handler
-	if serveFlags.ModProxy {
-		if serveFlags.HTTP == "" {
-			return env.Usagef("you must set --http to enable --modproxy")
-		}
-		modCachePath := filepath.Join(flags.CacheDir, "module")
-		if err := os.MkdirAll(modCachePath, 0700); err != nil {
-			lst.Close()
-			return fmt.Errorf("create module cache: %w", err)
-		}
-		cacher := &s3proxy.Cacher{
-			Local:       modCachePath,
-			S3Client:    s3c,
-			KeyPrefix:   path.Join(flags.KeyPrefix, "module"),
-			MaxTasks:    flags.S3Concurrency,
-			LogRequests: flags.DebugLog,
-			Logf:        vprintf,
-		}
-		defer func() {
-			vprintf("close cacher (err=%v)", cacher.Close())
-		}()
-		proxy := &goproxy.Goproxy{
-			Fetcher: &goproxy.GoFetcher{
-				// As configured, the fetcher should never shell out to the go
-				// tool. Specifically, because we set GOPROXY and do not set any
-				// bypass via GONOPROXY, GOPRIVATE, etc., we will only attempt to
-				// proxy for the specific server(s) listed in Env.
-				GoBin: "/bin/false",
-				Env:   []string{"GOPROXY=https://proxy.golang.org"},
-			},
-			Cacher:        cacher,
-			ProxiedSumDBs: []string{"sum.golang.org"}, // default, see below
-		}
-		vprintf("enabling Go module proxy")
-		if serveFlags.SumDB != "" {
-			proxy.ProxiedSumDBs = strings.Split(serveFlags.SumDB, ",")
-			vprintf("enabling sum DB proxy for %s", strings.Join(proxy.ProxiedSumDBs, ", "))
-		}
-		expvar.Publish("modcache", cacher.Metrics())
-
-		modProxy = http.StripPrefix("/mod", proxy)
+	modProxy, modCleanup, err := initModProxy(env.SetContext(ctx), s3c)
+	if err != nil {
+		lst.Close()
+		return fmt.Errorf("module proxy: %w", err)
 	}
+	defer modCleanup()
 
 	// If a reverse proxy is enabled, start it.
-	var revProxy http.Handler
-	if serveFlags.RevProxy != "" {
-		if serveFlags.HTTP == "" {
-			return env.Usagef("you must set --http to enable --revproxy")
-		}
-		revCachePath := filepath.Join(flags.CacheDir, "revproxy")
-		if err := os.MkdirAll(revCachePath, 0700); err != nil {
-			lst.Close()
-			return fmt.Errorf("create revproxy cache: %w", err)
-		}
-		hosts := strings.Split(serveFlags.RevProxy, ",")
-
-		// Issue a server certificate so we can proxy HTTPS requests.
-		cert, err := initServerCert(env, hosts)
-		if err != nil {
-			return err
-		}
-		proxy := &revproxy.Server{
-			Targets:   hosts,
-			Local:     revCachePath,
-			S3Client:  s3c,
-			KeyPrefix: path.Join(flags.KeyPrefix, "revproxy"),
-			Logf:      vprintf,
-		}
-		bridge := &proxyconn.Bridge{
-			Addrs:   hosts,
-			Handler: proxy, // forward HTTP requests unencrypted to the proxy
-		}
-		psrv := &http.Server{
-			TLSConfig: &tls.Config{Certificates: []tls.Certificate{cert}},
-			Handler:   proxy,
-		}
-		g.Go(func() error { return psrv.ServeTLS(bridge, "", "") })
-		g.Go(taskgroup.NoError(func() {
-			<-ctx.Done()
-			vprintf("stopping proxy bridge")
-			psrv.Shutdown(context.Background())
-		}))
-
-		expvar.Publish("revcache", proxy.Metrics())
-		vprintf("enabling reverse proxy for %s", strings.Join(proxy.Targets, ", "))
-		revProxy = bridge
+	revProxy, err := initRevProxy(env.SetContext(ctx), s3c, &g)
+	if err != nil {
+		lst.Close()
+		return fmt.Errorf("reverse proxy: %w", err)
 	}
 
 	// If an HTTP server is enabled, start it up with debug routes
