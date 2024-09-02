@@ -1,8 +1,6 @@
 module github.com/tailscale/go-cache-plugin
 
-go 1.22.1
-
-toolchain go1.23.0
+go 1.23.0
 
 require (
 	github.com/aws/aws-sdk-go-v2/config v1.27.28
@@ -12,7 +10,9 @@ require (
 	github.com/creachadair/flax v0.0.1
 	github.com/creachadair/gocache v0.0.0-20240828204135-c17fe2fd53a6
 	github.com/creachadair/mds v0.17.1
+	github.com/creachadair/mhttp v0.0.0-20240901170350-fcb7fe4d0ec4
 	github.com/creachadair/taskgroup v0.9.1
+	github.com/creachadair/tlsutil v0.0.0-20240901051800-c769f173a559
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da
 	github.com/goproxy/goproxy v0.17.2
 	golang.org/x/sync v0.8.0

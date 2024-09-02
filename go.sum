@@ -50,8 +50,12 @@ github.com/creachadair/gocache v0.0.0-20240828204135-c17fe2fd53a6 h1:SCF2S1aWvuF
 github.com/creachadair/gocache v0.0.0-20240828204135-c17fe2fd53a6/go.mod h1:iqnJUdWeHbNfn8xWEkLWGQnOo3dqjkZPH9Rk0rjVk0U=
 github.com/creachadair/mds v0.17.1 h1:lXQbTGKmb3nE3aK6OEp29L1gCx6B5ynzlQ6c1KOBurc=
 github.com/creachadair/mds v0.17.1/go.mod h1:4b//mUiL8YldH6TImXjmW45myzTLNS1LLjOmrk888eg=
+github.com/creachadair/mhttp v0.0.0-20240901170350-fcb7fe4d0ec4 h1:K3jpZDY2ny7Yg7hnyisuq8gqMd0vLyTwc50c0RBP81I=
+github.com/creachadair/mhttp v0.0.0-20240901170350-fcb7fe4d0ec4/go.mod h1:gFerCzdOaPgMrgHHm+d65i1ej09AMsMjzWgaOzvaVdQ=
 github.com/creachadair/taskgroup v0.9.1 h1:oam4POtt6PpmUr4us+ycUUfb2mPWc0RmIycte2oWoWw=
 github.com/creachadair/taskgroup v0.9.1/go.mod h1:9oDDPt/5QPS4iylvPMC81GRlj+1je8AFDbjUh4zaQWo=
+github.com/creachadair/tlsutil v0.0.0-20240901051800-c769f173a559 h1:8hlU8ebt2lI//6sFj6ICE6mN6c6Uvj4588XilSqpmu8=
+github.com/creachadair/tlsutil v0.0.0-20240901051800-c769f173a559/go.mod h1:q4s/lgXyN9Cn3nwDvFKbVy65nWNv7mPSYnDM1ShRfjo=
 github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc h1:U9qPSI2PIWSS1VwoXQT9A3Wy9MM3WgvqSxFWenqJduM=
 github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/fortytw2/leaktest v1.3.0 h1:u8491cBMTQ8ft8aeV+adlcytMZylmA5nnwwkRZjI8vw=

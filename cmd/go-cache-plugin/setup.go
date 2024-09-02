@@ -11,6 +11,8 @@ import (
 	"errors"
 	"expvar"
 	"fmt"
+	"net/http"
+	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/config"
@@ -21,6 +23,7 @@ import (
 	"github.com/creachadair/tlsutil"
 	"github.com/tailscale/go-cache-plugin/internal/s3util"
 	"github.com/tailscale/go-cache-plugin/s3cache"
+	"tailscale.com/tsweb"
 )
 
 func initCacheServer(env *command.Env) (*gocache.Server, *s3util.Client, error) {
@@ -98,4 +101,34 @@ func initServerCert(env *command.Env, hosts []string) (tls.Certificate, error) {
 	}
 
 	return sc.TLSCertificate()
+}
+
+// makeHandler returns an HTTP handler that dispatches requests to debug
+// handlers or to the specified proxies, if they are defined.
+func makeHandler(modProxy, revProxy http.Handler) http.HandlerFunc {
+	mux := http.NewServeMux()
+	tsweb.Debugger(mux)
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Host != "" && r.URL.Host == r.Host {
+			// The caller wants us to proxy for them.
+			if revProxy != nil {
+				revProxy.ServeHTTP(w, r)
+				return
+			}
+			// We don't allow proxying in this configuration, bug off.
+			http.Error(w, http.StatusText(http.StatusBadGateway), http.StatusBadGateway)
+			return
+		}
+
+		path := r.URL.Path
+		if strings.HasPrefix(path, "/debug/") {
+			mux.ServeHTTP(w, r)
+			return
+		}
+		if modProxy != nil && r.Method == http.MethodGet && strings.HasPrefix(path, "/mod/") {
+			modProxy.ServeHTTP(w, r)
+			return
+		}
+		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+	}
 }

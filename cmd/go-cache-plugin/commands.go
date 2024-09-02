@@ -5,6 +5,7 @@ package main
 
 import (
 	"context"
+	"crypto/tls"
 	"errors"
 	"expvar"
 	"fmt"
@@ -28,7 +29,6 @@ import (
 	"github.com/goproxy/goproxy"
 	"github.com/tailscale/go-cache-plugin/revproxy"
 	"github.com/tailscale/go-cache-plugin/s3proxy"
-	"tailscale.com/tsweb"
 )
 
 var flags struct {
@@ -99,32 +99,14 @@ func runServe(env *command.Env) error {
 	var g taskgroup.Group
 	g.Go(taskgroup.NoError(func() {
 		<-ctx.Done()
-		log.Printf("signal received, closing listener")
+		log.Printf("closing plugin listener")
 		lst.Close()
 	}))
 
-	// If an HTTP server is enabled, start it up with debug routes.
-	// If enabled, the module proxy and reverse cache attach to mux below.
-	var mux *http.ServeMux
-	if serveFlags.HTTP != "" {
-		mux = http.NewServeMux()
-		tsweb.Debugger(mux)
-		srv := &http.Server{
-			Addr:    serveFlags.HTTP,
-			Handler: mux,
-		}
-		g.Go(srv.ListenAndServe)
-		vprintf("HTTP server listening at %q", serveFlags.HTTP)
-		g.Go(taskgroup.NoError(func() {
-			<-ctx.Done()
-			vprintf("signal received, stopping HTTP service")
-			srv.Shutdown(context.Background())
-		}))
-	}
-
 	// If a module proxy is enabled, start it.
+	var modProxy http.Handler
 	if serveFlags.ModProxy {
-		if mux == nil {
+		if serveFlags.HTTP == "" {
 			return env.Usagef("you must set --http to enable --modproxy")
 		}
 		modCachePath := filepath.Join(flags.CacheDir, "module")
@@ -161,12 +143,14 @@ func runServe(env *command.Env) error {
 			vprintf("enabling sum DB proxy for %s", strings.Join(proxy.ProxiedSumDBs, ", "))
 		}
 		expvar.Publish("modcache", cacher.Metrics())
-		mux.Handle("/mod/", http.StripPrefix("/mod", proxy))
+
+		modProxy = http.StripPrefix("/mod", proxy)
 	}
 
 	// If a reverse proxy is enabled, start it.
+	var revProxy http.Handler
 	if serveFlags.RevProxy != "" {
-		if mux == nil {
+		if serveFlags.HTTP == "" {
 			return env.Usagef("you must set --http to enable --revproxy")
 		}
 		revCachePath := filepath.Join(flags.CacheDir, "revproxy")
@@ -174,16 +158,54 @@ func runServe(env *command.Env) error {
 			lst.Close()
 			return fmt.Errorf("create revproxy cache: %w", err)
 		}
+		hosts := strings.Split(serveFlags.RevProxy, ",")
+
+		// Issue a server certificate so we can proxy HTTPS requests.
+		cert, err := initServerCert(env, hosts)
+		if err != nil {
+			return err
+		}
 		proxy := &revproxy.Server{
-			Targets:   strings.Split(serveFlags.RevProxy, ","),
+			Targets:   hosts,
 			Local:     revCachePath,
 			S3Client:  s3c,
 			KeyPrefix: path.Join(flags.KeyPrefix, "revproxy"),
 			Logf:      vprintf,
 		}
+		bridge := &proxyconn.Bridge{
+			Addrs:   hosts,
+			Handler: proxy, // forward HTTP requests unencrypted to the proxy
+		}
+		psrv := &http.Server{
+			TLSConfig: &tls.Config{Certificates: []tls.Certificate{cert}},
+			Handler:   proxy,
+		}
+		g.Go(func() error { return psrv.ServeTLS(bridge, "", "") })
+		g.Go(taskgroup.NoError(func() {
+			<-ctx.Done()
+			vprintf("stopping proxy bridge")
+			psrv.Shutdown(context.Background())
+		}))
+
 		expvar.Publish("revcache", proxy.Metrics())
 		vprintf("enabling reverse proxy for %s", strings.Join(proxy.Targets, ", "))
-		mux.Handle("/", proxy)
+		revProxy = bridge
+	}
+
+	// If an HTTP server is enabled, start it up with debug routes
+	// and whatever other services were requested.
+	if serveFlags.HTTP != "" {
+		srv := &http.Server{
+			Addr:    serveFlags.HTTP,
+			Handler: makeHandler(modProxy, revProxy),
+		}
+		g.Go(srv.ListenAndServe)
+		vprintf("HTTP server listening at %q", serveFlags.HTTP)
+		g.Go(taskgroup.NoError(func() {
+			<-ctx.Done()
+			vprintf("stopping HTTP service")
+			srv.Shutdown(context.Background())
+		}))
 	}
 
 	for {
