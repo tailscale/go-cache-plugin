@@ -6,7 +6,6 @@ package main
 import (
 	"context"
 	"errors"
-	"expvar"
 	"fmt"
 	"io"
 	"log"
@@ -14,25 +13,13 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
-	"path"
-	"path/filepath"
 	"strconv"
-	"strings"
 	"syscall"
 	"time"
 
-	"github.com/aws/aws-sdk-go-v2/config"
-	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/creachadair/command"
 	"github.com/creachadair/gocache"
-	"github.com/creachadair/gocache/cachedir"
 	"github.com/creachadair/taskgroup"
-	"github.com/goproxy/goproxy"
-	"github.com/tailscale/go-cache-plugin/internal/s3util"
-	"github.com/tailscale/go-cache-plugin/revproxy"
-	"github.com/tailscale/go-cache-plugin/s3cache"
-	"github.com/tailscale/go-cache-plugin/s3proxy"
-	"tailscale.com/tsweb"
 )
 
 var flags struct {
@@ -47,63 +34,6 @@ var flags struct {
 	Expiration    time.Duration `flag:"expiry,default=$GOCACHE_EXPIRY,Cache expiration period (optional)"`
 	Verbose       bool          `flag:"v,default=$GOCACHE_VERBOSE,Enable verbose logging"`
 	DebugLog      bool          `flag:"debug,default=$GOCACHE_DEBUG,Enable detailed per-request debug logging (noisy)"`
-}
-
-func initCacheServer(env *command.Env) (*gocache.Server, *s3util.Client, error) {
-	switch {
-	case flags.CacheDir == "":
-		return nil, nil, env.Usagef("you must provide a --cache-dir")
-	case flags.S3Bucket == "":
-		return nil, nil, env.Usagef("you must provide an S3 --bucket name")
-	}
-	region, err := getBucketRegion(env.Context(), flags.S3Bucket)
-	if err != nil {
-		return nil, nil, env.Usagef("you must provide an S3 --region name")
-	}
-
-	dir, err := cachedir.New(flags.CacheDir)
-	if err != nil {
-		return nil, nil, fmt.Errorf("create local cache: %w", err)
-	}
-
-	cfg, err := config.LoadDefaultConfig(env.Context(), config.WithRegion(region))
-	if err != nil {
-		return nil, nil, fmt.Errorf("laod AWS config: %w", err)
-	}
-
-	vprintf("local cache directory: %s", flags.CacheDir)
-	vprintf("S3 cache bucket %q (%s)", flags.S3Bucket, region)
-	client := &s3util.Client{
-		Client: s3.NewFromConfig(cfg),
-		Bucket: flags.S3Bucket,
-	}
-	cache := &s3cache.Cache{
-		Local:             dir,
-		S3Client:          client,
-		KeyPrefix:         flags.KeyPrefix,
-		MinUploadSize:     flags.MinUploadSize,
-		UploadConcurrency: flags.S3Concurrency,
-	}
-	cache.SetMetrics(env.Context(), expvar.NewMap("gocache_host"))
-
-	close := cache.Close
-	if flags.Expiration > 0 {
-		dirClose := dir.Cleanup(flags.Expiration)
-		close = func(ctx context.Context) error {
-			return errors.Join(cache.Close(ctx), dirClose(ctx))
-		}
-	}
-	s := &gocache.Server{
-		Get:         cache.Get,
-		Put:         cache.Put,
-		Close:       close,
-		SetMetrics:  cache.SetMetrics,
-		MaxRequests: flags.Concurrency,
-		Logf:        vprintf,
-		LogRequests: flags.DebugLog,
-	}
-	expvar.Publish("gocache_server", s.Metrics().Get("server"))
-	return s, client, nil
 }
 
 // runDirect runs a cache communicating on stdin/stdout, for use as a direct
@@ -160,91 +90,39 @@ func runServe(env *command.Env) error {
 	var g taskgroup.Group
 	g.Go(taskgroup.NoError(func() {
 		<-ctx.Done()
-		log.Printf("signal received, closing listener")
+		log.Printf("closing plugin listener")
 		lst.Close()
 	}))
 
-	// If an HTTP server is enabled, start it up with debug routes.
-	// If enabled, the module proxy and reverse cache attach to mux below.
-	var mux *http.ServeMux
+	// If a module proxy is enabled, start it.
+	modProxy, modCleanup, err := initModProxy(env.SetContext(ctx), s3c)
+	if err != nil {
+		lst.Close()
+		return fmt.Errorf("module proxy: %w", err)
+	}
+	defer modCleanup()
+
+	// If a reverse proxy is enabled, start it.
+	revProxy, err := initRevProxy(env.SetContext(ctx), s3c, &g)
+	if err != nil {
+		lst.Close()
+		return fmt.Errorf("reverse proxy: %w", err)
+	}
+
+	// If an HTTP server is enabled, start it up with debug routes
+	// and whatever other services were requested.
 	if serveFlags.HTTP != "" {
-		mux = http.NewServeMux()
-		tsweb.Debugger(mux)
 		srv := &http.Server{
 			Addr:    serveFlags.HTTP,
-			Handler: mux,
+			Handler: makeHandler(modProxy, revProxy),
 		}
 		g.Go(srv.ListenAndServe)
 		vprintf("HTTP server listening at %q", serveFlags.HTTP)
 		g.Go(taskgroup.NoError(func() {
 			<-ctx.Done()
-			vprintf("signal received, stopping HTTP service")
+			vprintf("stopping HTTP service")
 			srv.Shutdown(context.Background())
 		}))
-	}
-
-	// If a module proxy is enabled, start it.
-	if serveFlags.ModProxy {
-		if mux == nil {
-			return env.Usagef("you must set --http to enable --modproxy")
-		}
-		modCachePath := filepath.Join(flags.CacheDir, "module")
-		if err := os.MkdirAll(modCachePath, 0700); err != nil {
-			lst.Close()
-			return fmt.Errorf("create module cache: %w", err)
-		}
-		cacher := &s3proxy.Cacher{
-			Local:       modCachePath,
-			S3Client:    s3c,
-			KeyPrefix:   path.Join(flags.KeyPrefix, "module"),
-			MaxTasks:    flags.S3Concurrency,
-			LogRequests: flags.DebugLog,
-			Logf:        vprintf,
-		}
-		defer func() {
-			vprintf("close cacher (err=%v)", cacher.Close())
-		}()
-		proxy := &goproxy.Goproxy{
-			Fetcher: &goproxy.GoFetcher{
-				// As configured, the fetcher should never shell out to the go
-				// tool. Specifically, because we set GOPROXY and do not set any
-				// bypass via GONOPROXY, GOPRIVATE, etc., we will only attempt to
-				// proxy for the specific server(s) listed in Env.
-				GoBin: "/bin/false",
-				Env:   []string{"GOPROXY=https://proxy.golang.org"},
-			},
-			Cacher:        cacher,
-			ProxiedSumDBs: []string{"sum.golang.org"}, // default, see below
-		}
-		vprintf("enabling Go module proxy")
-		if serveFlags.SumDB != "" {
-			proxy.ProxiedSumDBs = strings.Split(serveFlags.SumDB, ",")
-			vprintf("enabling sum DB proxy for %s", strings.Join(proxy.ProxiedSumDBs, ", "))
-		}
-		expvar.Publish("modcache", cacher.Metrics())
-		mux.Handle("/mod/", http.StripPrefix("/mod", proxy))
-	}
-
-	// If a reverse proxy is enabled, start it.
-	if serveFlags.RevProxy != "" {
-		if mux == nil {
-			return env.Usagef("you must set --http to enable --revproxy")
-		}
-		revCachePath := filepath.Join(flags.CacheDir, "revproxy")
-		if err := os.MkdirAll(revCachePath, 0700); err != nil {
-			lst.Close()
-			return fmt.Errorf("create revproxy cache: %w", err)
-		}
-		proxy := &revproxy.Server{
-			Targets:   strings.Split(serveFlags.RevProxy, ","),
-			Local:     revCachePath,
-			S3Client:  s3c,
-			KeyPrefix: path.Join(flags.KeyPrefix, "revproxy"),
-			Logf:      vprintf,
-		}
-		expvar.Publish("revcache", proxy.Metrics())
-		vprintf("enabling reverse proxy for %s", strings.Join(proxy.Targets, ", "))
-		mux.Handle("/", proxy)
 	}
 
 	for {
