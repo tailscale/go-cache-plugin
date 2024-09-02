@@ -31,7 +31,6 @@ import (
 	"github.com/tailscale/go-cache-plugin/revproxy"
 	"github.com/tailscale/go-cache-plugin/s3cache"
 	"github.com/tailscale/go-cache-plugin/s3proxy"
-	"golang.org/x/sys/unix"
 	"tailscale.com/tsweb"
 )
 
@@ -246,28 +245,6 @@ func makeHandler(modProxy, revProxy http.Handler) http.HandlerFunc {
 		}
 		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 	}
-}
-
-// lockAndAppend acquires an exclusive advisory lock on path, if possible, and
-// appends data to the end of it. It reports an error if path does not exist,
-// or if the lock could not be acquired. The lock is automatically released
-// before returning.
-//
-//lint:ignore U1000 Depends on build tags.
-func lockAndAppend(path string, data []byte) error {
-	f, err := os.OpenFile(path, os.O_RDWR|os.O_APPEND, 0)
-	if err != nil {
-		return err
-	}
-	fd := int(f.Fd())
-	if err := unix.Flock(fd, unix.LOCK_EX); err != nil {
-		f.Close()
-		return fmt.Errorf("lock: %w", err)
-	}
-	defer unix.Flock(fd, unix.LOCK_UN)
-	_, werr := f.Write(data)
-	cerr := f.Close()
-	return errors.Join(werr, cerr)
 }
 
 // noop is a cleanup function that does nothing, used as a default.
