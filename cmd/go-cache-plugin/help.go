@@ -82,11 +82,11 @@ Use the "serve" subcommand:
 
   go-cache-plugin serve \
      --cache-dir=/tmp/gocache --bucket=$B \
-     --socket /var/run/cache.sock
+     --plugin $PORT
 
 You can then use the "connect" subcommand to wire up the toolchain:
 
-  export GOCACHEPROG="go-cache-plugin connect /var/run/cache.sock"
+  export GOCACHEPROG="go-cache-plugin connect $PORT"
 
 In this mode, the server must have credentials to access to S3, but the
 toolchain process does not need AWS credentials.`,
@@ -101,15 +101,17 @@ given address:
 
    go-cache-plugin serve ... --http=localhost:5970 --modproxy
 
-To use the module proxy, set the standard GOPROXY environment variable:
+To use the module proxy, set the standard GOPROXY environment variable.
+The module proxy serves under the path "/mod/":
 
-   export GOPROXY=localhost:5970
-   export GOCACHEPROG="go-cache-plugin connect /var/run/cache.sock"
+   export GOPROXY=http://localhost:5970/mod
+   export GOCACHEPROG="go-cache-plugin connect $PORT"
    go build ...
 
-To use the sum DB proxy, set the GOSUMDB environment variable:
+To use the sum DB proxy, set the GOSUMDB environment variable.
+The proxy path for a given sumdb (e.g., sum.golang.org) has this format:
 
-   export GOSUMDB="sum.golang.org http://localhost:5970/sumdb/sum.golang.org"
+   export GOSUMDB="sum.golang.org http://localhost:5970/mod/sumdb/sum.golang.org"
 
 See also: https://proxy.golang.org/`,
 	},
@@ -122,10 +124,15 @@ proxy for the specified hosts, given as a comma-separated list:
 
    go-cache-plugin serve ... \
       --http=localhost:5970 \
-      --revproxy='api.example.com,*.example2.com'
+      --revproxy='api.example.com,www.example.com'
 
 When this is enabled, you can configure this address as an HTTP proxy:
 
-   HTTP_PROXY=localhost:5970 curl https://api.example.com/foo`,
+   HTTPS_PROXY=localhost:5970 curl https://api.example.com/foo
+
+The proxy supports both HTTP and HTTPS backends. For HTTPS proxy targets, the
+server generates its own TLS certificate, and tries to install a custom signing
+cert so that other tools will validate it. The ability to do this varies by
+system and configuration, however.`,
 	},
 }

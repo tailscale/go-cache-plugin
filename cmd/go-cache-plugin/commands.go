@@ -56,7 +56,7 @@ var serveFlags struct {
 	Plugin   int    `flag:"plugin,default=$GOCACHE_PLUGIN,Plugin service port (required)"`
 	HTTP     string `flag:"http,default=$GOCACHE_HTTP,HTTP service address ([host]:port)"`
 	ModProxy bool   `flag:"modproxy,default=$GOCACHE_MODPROXY,Enable a Go module proxy (requires --http)"`
-	RevProxy string `flag:"revproxy,default=$GOCACHE_REVPROXY,Reverse proxy these hosts (comma-separated)"`
+	RevProxy string `flag:"revproxy,default=$GOCACHE_REVPROXY,Reverse proxy these hosts (comma-separated; requires --http)"`
 	SumDB    string `flag:"sumdb,default=$GOCACHE_SUMDB,SumDB servers to proxy for (comma-separated)"`
 }
 

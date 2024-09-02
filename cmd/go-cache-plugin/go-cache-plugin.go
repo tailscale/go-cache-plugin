@@ -41,14 +41,14 @@ the --cache-dir flag or GOCACHE_DIR environment.`,
 		Commands: []*command.C{
 			{
 				Name:  "serve",
-				Usage: "--socket <path>",
+				Usage: "--plugin <port>",
 				Help: `Run a cache server.
 
 In this mode, the cache server listens for connections on a socket instead of
 serving directly over stdin/stdout. The "connect" command adapts the direct
 interface to this one.
 
-By default, only the build cache is exported via the --socket path.
+By default, only the build cache is exported via the --plugin port.
 
 If --http is set, the server also exports an HTTP server at that address.
 By default, this exports only /debug endpoints, including metrics.
@@ -58,18 +58,19 @@ When --http is enabled, the following options are available:
   http://<host>:<port>/mod/.
 
 - When --revproxy is set, the server also hosts a caching reverse proxy for the
-  specified hosts at http://<host>:<port>/revproxy.`,
+  specified hosts at http://<host>:<port>. The reverse proxy handles both HTTP
+  and HTTPS requests, and caches immutable successful responses.`,
 
 				SetFlags: command.Flags(flax.MustBind, &serveFlags),
 				Run:      command.Adapt(runServe),
 			},
 			{
 				Name:  "connect",
-				Usage: "<socket-path>",
+				Usage: "<port>",
 				Help: `Connect to a remote cache server.
 
 This mode bridges stdin/stdout to a cache server (see the "serve" command)
-listening on a socket.`,
+listening on the specified port.`,
 
 				Run: command.Adapt(runConnect),
 			},
