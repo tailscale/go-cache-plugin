@@ -246,9 +246,13 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 // rewriteRequest rewrites the inbound request for routing to a target.
 func (s *Server) rewriteRequest(pr *httputil.ProxyRequest) {
-	pr.Out.URL = pr.In.URL
-	pr.Out.URL.Scheme = "https"
-	pr.Out.Host = pr.Out.URL.Host
+	u, _ := url.ParseRequestURI(pr.In.RequestURI)
+	u.Host = pr.In.Host
+	if u.Scheme == "" {
+		u.Scheme = "https"
+	}
+	pr.Out.URL = u
+	pr.Out.Host = u.Host
 }
 
 type copyReader struct {
