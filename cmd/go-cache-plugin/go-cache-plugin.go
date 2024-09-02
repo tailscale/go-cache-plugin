@@ -1,3 +1,6 @@
+// Copyright (c) Tailscale Inc & AUTHORS
+// SPDX-License-Identifier: BSD-3-Clause
+
 // Program gocache implements the experimental GOCACHEPROG protocol over an S3
 // bucket, for use in builder and CI workers.
 package main

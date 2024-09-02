@@ -1,3 +1,6 @@
+// Copyright (c) Tailscale Inc & AUTHORS
+// SPDX-License-Identifier: BSD-3-Clause
+
 // Package revproxy implements a minimal HTTP reverse proxy that caches files
 // locally on disk, backed by objects in an S3 bucket.
 //

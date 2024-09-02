@@ -1,3 +1,6 @@
+// Copyright (c) Tailscale Inc & AUTHORS
+// SPDX-License-Identifier: BSD-3-Clause
+
 // Package s3proxy implements components of a Go module proxy that caches files
 // locally on disk, backed by objects in an S3 bucket.
 package s3proxy

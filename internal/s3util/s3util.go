@@ -1,3 +1,6 @@
+// Copyright (c) Tailscale Inc & AUTHORS
+// SPDX-License-Identifier: BSD-3-Clause
+
 // Package s3util defines some helpful utilities for working with S3.
 package s3util
 

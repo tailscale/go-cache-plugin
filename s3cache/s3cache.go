@@ -1,3 +1,6 @@
+// Copyright (c) Tailscale Inc & AUTHORS
+// SPDX-License-Identifier: BSD-3-Clause
+
 // Package s3cache implements callbacks for a gocache.Server that store data
 // into an S3 bucket through a local directory.
 package s3cache
