@@ -16,6 +16,7 @@ require (
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da
 	github.com/goproxy/goproxy v0.17.2
 	golang.org/x/sync v0.8.0
+	golang.org/x/sys v0.22.0
 	honnef.co/go/tools v0.5.1
 	tailscale.com v1.72.1
 )
@@ -51,7 +52,6 @@ require (
 	golang.org/x/crypto v0.25.0 // indirect
 	golang.org/x/exp/typeparams v0.0.0-20240119083558-1b970713d09a // indirect
 	golang.org/x/mod v0.19.0 // indirect
-	golang.org/x/sys v0.22.0 // indirect
 	golang.org/x/tools v0.23.0 // indirect
 	google.golang.org/protobuf v1.33.0 // indirect
 )
