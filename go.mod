@@ -9,8 +9,8 @@ require (
 	github.com/creachadair/command v0.1.13
 	github.com/creachadair/flax v0.0.1
 	github.com/creachadair/gocache v0.0.0-20240828204135-c17fe2fd53a6
-	github.com/creachadair/mds v0.17.1
-	github.com/creachadair/mhttp v0.0.0-20240901170350-fcb7fe4d0ec4
+	github.com/creachadair/mds v0.18.1
+	github.com/creachadair/mhttp v0.0.0-20240903220739-94a049de22e4
 	github.com/creachadair/taskgroup v0.9.1
 	github.com/creachadair/tlsutil v0.0.0-20240901051800-c769f173a559
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da
