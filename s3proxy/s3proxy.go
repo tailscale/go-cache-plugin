@@ -24,7 +24,7 @@ import (
 	"github.com/creachadair/atomicfile"
 	"github.com/creachadair/taskgroup"
 	"github.com/goproxy/goproxy"
-	"github.com/tailscale/go-cache-plugin/internal/s3util"
+	"github.com/tailscale/go-cache-plugin/lib/s3util"
 	"golang.org/x/sync/semaphore"
 )
 
