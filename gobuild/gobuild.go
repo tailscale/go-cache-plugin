@@ -1,9 +1,9 @@
 // Copyright (c) Tailscale Inc & AUTHORS
 // SPDX-License-Identifier: BSD-3-Clause
 
-// Package s3cache implements callbacks for a gocache.Server that store data
+// Package gobuild implements callbacks for a gocache.Server that store data
 // into an S3 bucket through a local directory.
-package s3cache
+package gobuild
 
 import (
 	"bytes"
@@ -26,7 +26,7 @@ import (
 	"github.com/tailscale/go-cache-plugin/lib/s3util"
 )
 
-// Cache implements callbacks for a gocache.Server using an S3 bucket for
+// S3Cache implements callbacks for a gocache.Server using an S3 bucket for
 // backing store with a local directory for staging.
 //
 // # Remote Cache Layout
@@ -49,7 +49,7 @@ import (
 //
 // where the object ID is hex encoded and the timestamp is Unix nanoseconds.
 // The object file contains just the binary data of the object.
-type Cache struct {
+type S3Cache struct {
 	// Local is the local cache directory where actions and objects are staged.
 	// It must be non-nil. A local stage is required because the Go toolchain
 	// needs direct access to read the files reported by the cache.
@@ -88,14 +88,14 @@ type Cache struct {
 	putS3Error   expvar.Int // count of errors writing to S3
 }
 
-func (s *Cache) init() {
+func (s *S3Cache) init() {
 	s.initOnce.Do(func() {
 		s.push, s.start = taskgroup.New(nil).Limit(s.uploadConcurrency())
 	})
 }
 
 // Get implements the corresponding callback of the cache protocol.
-func (s *Cache) Get(ctx context.Context, actionID string) (objectID, diskPath string, _ error) {
+func (s *S3Cache) Get(ctx context.Context, actionID string) (objectID, diskPath string, _ error) {
 	s.init()
 
 	objID, diskPath, err := s.Local.Get(ctx, actionID)
@@ -142,7 +142,7 @@ func (s *Cache) Get(ctx context.Context, actionID string) (objectID, diskPath st
 }
 
 // Put implements the corresponding callback of the cache protocol.
-func (s *Cache) Put(ctx context.Context, obj gocache.Object) (diskPath string, _ error) {
+func (s *S3Cache) Put(ctx context.Context, obj gocache.Object) (diskPath string, _ error) {
 	s.init()
 
 	// Compute an etag so we can do a conditional put on the object data.
@@ -187,7 +187,7 @@ func (s *Cache) Put(ctx context.Context, obj gocache.Object) (diskPath string, _
 }
 
 // Close implements the corresponding callback of the cache protocol.
-func (s *Cache) Close(ctx context.Context) error {
+func (s *S3Cache) Close(ctx context.Context) error {
 	if s.push != nil {
 		gocache.Logf(ctx, "waiting for uploads...")
 		wstart := time.Now()
@@ -198,7 +198,7 @@ func (s *Cache) Close(ctx context.Context) error {
 }
 
 // SetMetrics implements the corresponding server callback.
-func (s *Cache) SetMetrics(_ context.Context, m *expvar.Map) {
+func (s *S3Cache) SetMetrics(_ context.Context, m *expvar.Map) {
 	m.Set("get_local_hit", &s.getLocalHit)
 	m.Set("get_fault_hit", &s.getFaultHit)
 	m.Set("get_fault_miss", &s.getFaultMiss)
@@ -212,7 +212,7 @@ func (s *Cache) SetMetrics(_ context.Context, m *expvar.Map) {
 // maybePutObject writes the specified object contents to S3 if there is not
 // already a matching key with the same etag. It returns the modified time of
 // the object file, whether or not it was sent to S3.
-func (s *Cache) maybePutObject(ctx context.Context, objectID, diskPath, etag string) (time.Time, error) {
+func (s *S3Cache) maybePutObject(ctx context.Context, objectID, diskPath, etag string) (time.Time, error) {
 	f, err := os.Open(diskPath)
 	if err != nil {
 		gocache.Logf(ctx, "[s3] open local object %s: %v", objectID, err)
@@ -240,14 +240,14 @@ func (s *Cache) maybePutObject(ctx context.Context, objectID, diskPath, etag str
 
 // makeKey assembles a complete key from the specified parts, including the key
 // prefix if one is defined.
-func (s *Cache) makeKey(parts ...string) string {
+func (s *S3Cache) makeKey(parts ...string) string {
 	return path.Join(s.KeyPrefix, path.Join(parts...))
 }
 
-func (s *Cache) actionKey(id string) string { return s.makeKey("action", id[:2], id) }
-func (s *Cache) objectKey(id string) string { return s.makeKey("object", id[:2], id) }
+func (s *S3Cache) actionKey(id string) string { return s.makeKey("action", id[:2], id) }
+func (s *S3Cache) objectKey(id string) string { return s.makeKey("object", id[:2], id) }
 
-func (s *Cache) uploadConcurrency() int {
+func (s *S3Cache) uploadConcurrency() int {
 	if s.UploadConcurrency <= 0 {
 		return runtime.NumCPU()
 	}
