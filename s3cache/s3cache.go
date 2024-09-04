@@ -23,7 +23,7 @@ import (
 	"github.com/creachadair/gocache"
 	"github.com/creachadair/gocache/cachedir"
 	"github.com/creachadair/taskgroup"
-	"github.com/tailscale/go-cache-plugin/internal/s3util"
+	"github.com/tailscale/go-cache-plugin/lib/s3util"
 )
 
 // Cache implements callbacks for a gocache.Server using an S3 bucket for

@@ -27,7 +27,7 @@ import (
 	"github.com/creachadair/taskgroup"
 	"github.com/creachadair/tlsutil"
 	"github.com/goproxy/goproxy"
-	"github.com/tailscale/go-cache-plugin/internal/s3util"
+	"github.com/tailscale/go-cache-plugin/lib/s3util"
 	"github.com/tailscale/go-cache-plugin/revproxy"
 	"github.com/tailscale/go-cache-plugin/s3cache"
 	"github.com/tailscale/go-cache-plugin/s3proxy"

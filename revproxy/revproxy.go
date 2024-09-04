@@ -33,7 +33,7 @@ import (
 
 	"github.com/creachadair/taskgroup"
 	"github.com/golang/groupcache/lru"
-	"github.com/tailscale/go-cache-plugin/internal/s3util"
+	"github.com/tailscale/go-cache-plugin/lib/s3util"
 )
 
 // Server is a caching reverse proxy server that caches successful responses to
