@@ -29,8 +29,8 @@ import (
 	"github.com/goproxy/goproxy"
 	"github.com/tailscale/go-cache-plugin/gobuild"
 	"github.com/tailscale/go-cache-plugin/lib/s3util"
+	"github.com/tailscale/go-cache-plugin/modproxy"
 	"github.com/tailscale/go-cache-plugin/revproxy"
-	"github.com/tailscale/go-cache-plugin/s3proxy"
 	"tailscale.com/tsweb"
 )
 
@@ -105,7 +105,7 @@ func initModProxy(env *command.Env, s3c *s3util.Client) (_ http.Handler, cleanup
 	if err := os.MkdirAll(modCachePath, 0700); err != nil {
 		return nil, nil, fmt.Errorf("create module cache: %w", err)
 	}
-	cacher := &s3proxy.Cacher{
+	cacher := &modproxy.S3Cacher{
 		Local:       modCachePath,
 		S3Client:    s3c,
 		KeyPrefix:   path.Join(flags.KeyPrefix, "module"),

@@ -1,9 +1,9 @@
 // Copyright (c) Tailscale Inc & AUTHORS
 // SPDX-License-Identifier: BSD-3-Clause
 
-// Package s3proxy implements components of a Go module proxy that caches files
-// locally on disk, backed by objects in an S3 bucket.
-package s3proxy
+// Package modproxy implements components of a Go module proxy that caches
+// files locally on disk, backed by objects in an S3 bucket.
+package modproxy
 
 import (
 	"bytes"
@@ -28,10 +28,10 @@ import (
 	"golang.org/x/sync/semaphore"
 )
 
-var _ goproxy.Cacher = (*Cacher)(nil)
+var _ goproxy.Cacher = (*S3Cacher)(nil)
 
-// Cacher implements the [github.com/goproxy/goproxy.Cacher] interface using a
-// local disk cache backed by an S3 bucket.
+// S3Cacher implements the [github.com/goproxy/goproxy.Cacher] interface using
+// a local disk cache backed by an S3 bucket.
 //
 // # Cache Layout
 //
@@ -48,7 +48,7 @@ var _ goproxy.Cacher = (*Cacher)(nil)
 // the specified key prefix instead:
 //
 //	<key-prefix>/module/16/0db4d719252162c87a9169e26deda33d2340770d0d540fd4c580c55008b2d6
-type Cacher struct {
+type S3Cacher struct {
 	// Local is the path of a local cache directory where modules are cached.
 	// It must be non-empty.
 	Local string
@@ -114,7 +114,7 @@ type Cacher struct {
 	putS3Bytes    expvar.Int // put: total bytes written to S3
 }
 
-func (c *Cacher) init() {
+func (c *S3Cacher) init() {
 	c.initOnce.Do(func() {
 		nt := c.MaxTasks
 		if nt <= 0 {
@@ -127,7 +127,7 @@ func (c *Cacher) init() {
 
 // Get implements a method of the goproxy.Cacher interface.  It reports cache
 // hits out of the local directory if available, or faults in from S3.
-func (c *Cacher) Get(ctx context.Context, name string) (_ io.ReadCloser, oerr error) {
+func (c *S3Cacher) Get(ctx context.Context, name string) (_ io.ReadCloser, oerr error) {
 	c.init()
 	c.getRequest.Add(1)
 	start := time.Now()
@@ -179,7 +179,7 @@ func (c *Cacher) Get(ctx context.Context, name string) (_ io.ReadCloser, oerr er
 
 // putLocal reports whether the specified path already exists in the local
 // cache, and if not, writes data atomically into the path.
-func (c *Cacher) putLocal(ctx context.Context, name, path string, data io.Reader) (bool, error) {
+func (c *S3Cacher) putLocal(ctx context.Context, name, path string, data io.Reader) (bool, error) {
 	if _, err := os.Stat(path); err == nil {
 		return true, nil
 	}
@@ -193,7 +193,7 @@ func (c *Cacher) putLocal(ctx context.Context, name, path string, data io.Reader
 
 // Put implements a method of the goproxy.Cacher interface. It stores data into
 // the local directory and then writes it back to S3 in the background.
-func (c *Cacher) Put(ctx context.Context, name string, data io.ReadSeeker) (oerr error) {
+func (c *S3Cacher) Put(ctx context.Context, name string, data io.ReadSeeker) (oerr error) {
 	c.init()
 	c.putRequest.Add(1)
 	start := time.Now()
@@ -240,14 +240,14 @@ func (c *Cacher) Put(ctx context.Context, name string, data io.ReadSeeker) (oerr
 }
 
 // Close waits until all background updates are complete.
-func (c *Cacher) Close() error {
+func (c *S3Cacher) Close() error {
 	c.init()
 	return c.tasks.Wait()
 }
 
 // Metrics returns a map of cacher metrics. The caller is responsible for
 // publishing these metrics.
-func (c *Cacher) Metrics() *expvar.Map {
+func (c *S3Cacher) Metrics() *expvar.Map {
 	m := new(expvar.Map)
 	m.Set("path_error", &c.pathError)
 	m.Set("get_request", &c.getRequest)
@@ -273,13 +273,13 @@ func hashName(name string) string {
 
 // makeKey assembles a complete S3 key from the specified parts, including the
 // key prefix if one is defined.
-func (c *Cacher) makeKey(hash string) string {
+func (c *S3Cacher) makeKey(hash string) string {
 	return path.Join(c.KeyPrefix, hash[:2], hash)
 }
 
 // makePath assembles a complete local cache path for the given name, creating
 // the enclosing directory if needed.
-func (c *Cacher) makePath(name string) (hash, path string, err error) {
+func (c *S3Cacher) makePath(name string) (hash, path string, err error) {
 	hash = hashName(name)
 	path = filepath.Join(c.Local, hash[:2], hash)
 	err = os.MkdirAll(filepath.Dir(path), 0700)
@@ -289,13 +289,13 @@ func (c *Cacher) makePath(name string) (hash, path string, err error) {
 	return hash, path, err
 }
 
-func (c *Cacher) logf(msg string, args ...any) {
+func (c *S3Cacher) logf(msg string, args ...any) {
 	if c.Logf != nil {
 		c.Logf(msg, args...)
 	}
 }
 
-func (c *Cacher) vlogf(msg string, args ...any) {
+func (c *S3Cacher) vlogf(msg string, args ...any) {
 	if c.LogRequests {
 		c.logf(msg, args...)
 	}
