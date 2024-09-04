@@ -172,6 +172,7 @@ func initRevProxy(env *command.Env, s3c *s3util.Client, g *taskgroup.Group) (htt
 		// Forward connections not matching Addrs directly to their targets.
 		ForwardConnect: true,
 	}
+	expvar.Publish("proxyconn", bridge.Metrics())
 
 	// Run the proxy on its own separate server with TLS support.  This server
 	// does not listen on a real network; it receives connections forwarded by
