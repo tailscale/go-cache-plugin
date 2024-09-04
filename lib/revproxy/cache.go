@@ -35,10 +35,10 @@ func (s *Server) cacheLoadLocal(hash string) ([]byte, http.Header, error) {
 // response headers, followed by "\n\n", followed by the response body.
 func (s *Server) cacheStoreLocal(hash string, hdr http.Header, body []byte) error {
 	path := s.makePath(hash)
-	if err := os.MkdirAll(filepath.Dir(path), 0700); err != nil {
+	if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
 		return err
 	}
-	return atomicfile.Tx(s.makePath(hash), 0600, func(f *atomicfile.File) error {
+	return atomicfile.Tx(s.makePath(hash), 0644, func(f *atomicfile.File) error {
 		return writeCacheObject(f, hdr, body)
 	})
 }

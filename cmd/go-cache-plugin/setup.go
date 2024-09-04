@@ -102,7 +102,7 @@ func initModProxy(env *command.Env, s3c *s3util.Client) (_ http.Handler, cleanup
 	}
 
 	modCachePath := filepath.Join(flags.CacheDir, "module")
-	if err := os.MkdirAll(modCachePath, 0700); err != nil {
+	if err := os.MkdirAll(modCachePath, 0755); err != nil {
 		return nil, nil, fmt.Errorf("create module cache: %w", err)
 	}
 	cacher := &modproxy.S3Cacher{
@@ -146,7 +146,7 @@ func initRevProxy(env *command.Env, s3c *s3util.Client, g *taskgroup.Group) (htt
 	}
 
 	revCachePath := filepath.Join(flags.CacheDir, "revproxy")
-	if err := os.MkdirAll(revCachePath, 0700); err != nil {
+	if err := os.MkdirAll(revCachePath, 0755); err != nil {
 		return nil, fmt.Errorf("create revproxy cache: %w", err)
 	}
 	hosts := strings.Split(serveFlags.RevProxy, ",")

@@ -183,7 +183,7 @@ func (c *S3Cacher) putLocal(ctx context.Context, name, path string, data io.Read
 	if _, err := os.Stat(path); err == nil {
 		return true, nil
 	}
-	nw, err := atomicfile.WriteAll(path, data, 0600)
+	nw, err := atomicfile.WriteAll(path, data, 0644)
 	c.putLocalBytes.Add(nw)
 	if err != nil {
 		c.putLocalError.Add(1)
@@ -282,7 +282,7 @@ func (c *S3Cacher) makeKey(hash string) string {
 func (c *S3Cacher) makePath(name string) (hash, path string, err error) {
 	hash = hashName(name)
 	path = filepath.Join(c.Local, hash[:2], hash)
-	err = os.MkdirAll(filepath.Dir(path), 0700)
+	err = os.MkdirAll(filepath.Dir(path), 0755)
 	if err != nil {
 		c.pathError.Add(1)
 	}

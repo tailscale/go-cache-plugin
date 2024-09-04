@@ -42,12 +42,12 @@ github.com/cespare/xxhash/v2 v2.2.0 h1:DC2CZ1Ep5Y4k3ZQ899DldepgrayRUGE6BBZ/cd9Cj
 github.com/cespare/xxhash/v2 v2.2.0/go.mod h1:VGX0DQ3Q6kWi7AoAeZDth3/j3BFtOZR5XLFGgcrjCOs=
 github.com/creachadair/atomicfile v0.3.5 h1:i93bxeaH/rQR6XfJslola3XkOM1nEP3eIexuk9SWcSc=
 github.com/creachadair/atomicfile v0.3.5/go.mod h1:m7kIY2OUMygtETnMYe141rubsG4b+EusFLinlxxdHYM=
-github.com/creachadair/command v0.1.13 h1:UDKPF3QYPRS/quZPVYZ7sW1JLxLLOgiyVSLQ+7wwI2o=
-github.com/creachadair/command v0.1.13/go.mod h1:YKwUE49nAi8qxLl8jCQ0GMPvwdxmIBkJW3LqxgZ7ljk=
+github.com/creachadair/command v0.1.14 h1:lvAPKPrFU8ECyRQ4MEDCw5UEHhSOIYs5knLLNXvpYyI=
+github.com/creachadair/command v0.1.14/go.mod h1:JyiZVgQzhzPWa8DdE6Hfl+IOi7DMpXToBEvQCQoST7c=
 github.com/creachadair/flax v0.0.1 h1:it+joEf9aEUalaV7XWll/pk6zA4/FbNvMImW9q/lS8o=
 github.com/creachadair/flax v0.0.1/go.mod h1:K8bFvn8hMdAljQkaKNc7I3os5Wk36JxkyCkfdZ7S8d4=
-github.com/creachadair/gocache v0.0.0-20240828204135-c17fe2fd53a6 h1:SCF2S1aWvuFD+Vus1HGkbhaP8+ZX0VC8yWyWynlDqTg=
-github.com/creachadair/gocache v0.0.0-20240828204135-c17fe2fd53a6/go.mod h1:iqnJUdWeHbNfn8xWEkLWGQnOo3dqjkZPH9Rk0rjVk0U=
+github.com/creachadair/gocache v0.0.0-20240904225701-6c4617815112 h1:FSlFO2eztBGGzp67D2z/eeNe5U+AZyj4g/CjKf0AHbo=
+github.com/creachadair/gocache v0.0.0-20240904225701-6c4617815112/go.mod h1:vkGW73GdzBPQZJdFlPBZVzFcG7lTxIgDY0+U30mp3xs=
 github.com/creachadair/mds v0.18.1 h1:lq2JufNm5Vfkdolf9Z+2shiw7r8XJgLSZniLHUFYJcI=
 github.com/creachadair/mds v0.18.1/go.mod h1:4b//mUiL8YldH6TImXjmW45myzTLNS1LLjOmrk888eg=
 github.com/creachadair/mhttp v0.0.0-20240904023549-156b88d21c62 h1:6OEfFAgnbvhEDAR83DBUbvImn68DH2NpqcXrwID9Vbs=
