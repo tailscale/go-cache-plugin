@@ -27,9 +27,9 @@ import (
 	"github.com/creachadair/taskgroup"
 	"github.com/creachadair/tlsutil"
 	"github.com/goproxy/goproxy"
+	"github.com/tailscale/go-cache-plugin/gobuild"
 	"github.com/tailscale/go-cache-plugin/lib/s3util"
 	"github.com/tailscale/go-cache-plugin/revproxy"
-	"github.com/tailscale/go-cache-plugin/s3cache"
 	"github.com/tailscale/go-cache-plugin/s3proxy"
 	"tailscale.com/tsweb"
 )
@@ -62,7 +62,7 @@ func initCacheServer(env *command.Env) (*gocache.Server, *s3util.Client, error) 
 		Client: s3.NewFromConfig(cfg),
 		Bucket: flags.S3Bucket,
 	}
-	cache := &s3cache.Cache{
+	cache := &gobuild.S3Cache{
 		Local:             dir,
 		S3Client:          client,
 		KeyPrefix:         flags.KeyPrefix,
