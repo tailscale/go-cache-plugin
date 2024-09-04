@@ -167,6 +167,7 @@ func initRevProxy(env *command.Env, s3c *s3util.Client, g *taskgroup.Group) (htt
 	bridge := &proxyconn.Bridge{
 		Addrs:   hosts,
 		Handler: proxy, // forward HTTP requests unencrypted to the proxy
+		Logf:    vprintf,
 
 		// Forward connections not matching Addrs directly to their targets.
 		ForwardConnect: true,
