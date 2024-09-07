@@ -199,9 +199,9 @@ func initRevProxy(env *command.Env, s3c *s3util.Client, g *taskgroup.Group) (htt
 // initServerCert creates a signed certificate advertising the specified host
 // names, for use in creating a TLS server.
 func initServerCert(env *command.Env, hosts []string) (tls.Certificate, error) {
-	ca, err := tlsutil.NewSigningCert(&x509.Certificate{
+	ca, err := tlsutil.NewSigningCert(24*time.Hour, &x509.Certificate{
 		Subject: pkix.Name{Organization: []string{"Tailscale build automation"}},
-	}, 24*time.Hour)
+	})
 	if err != nil {
 		return tls.Certificate{}, fmt.Errorf("generate signing cert: %w", err)
 	}
@@ -214,10 +214,10 @@ func initServerCert(env *command.Env, hosts []string) (tls.Certificate, error) {
 		// This is OK for ephemeral build/CI workers, though.
 	}
 
-	sc, err := tlsutil.NewServerCert(&x509.Certificate{
+	sc, err := tlsutil.NewServerCert(24*time.Hour, ca, &x509.Certificate{
 		Subject:  pkix.Name{Organization: []string{"Go cache plugin reverse proxy"}},
 		DNSNames: hosts,
-	}, 24*time.Hour, ca)
+	})
 	if err != nil {
 		return tls.Certificate{}, fmt.Errorf("generate server cert: %w", err)
 	}
