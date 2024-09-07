@@ -17,6 +17,7 @@ import (
 	"time"
 
 	"github.com/creachadair/atomicfile"
+	"github.com/creachadair/scheddle"
 	"github.com/creachadair/taskgroup"
 )
 
@@ -75,29 +76,22 @@ func (s *Server) cacheStoreS3(hash string, hdr http.Header, body []byte) taskgro
 
 // cacheLoadMemory reads cached headers and body from the memory cache.
 func (s *Server) cacheLoadMemory(hash string) ([]byte, http.Header, error) {
-	s.mcacheMu.Lock()
-	defer s.mcacheMu.Unlock()
-	v, ok := s.mcache.Get(hash)
+	e, ok := s.mcache.Get(hash)
 	if !ok {
 		return nil, nil, fs.ErrNotExist
 	}
-	entry := v.(memCacheEntry)
-	if time.Now().After(entry.expires) {
-		s.mcache.Remove(hash)
-		return nil, nil, errors.New("entry expired")
-	}
-	return entry.body, entry.header, nil
+	return e.body, e.header, nil
 }
 
 // cacheStoreMemory writes the contents of body to the memory cache.
 func (s *Server) cacheStoreMemory(hash string, maxAge time.Duration, hdr http.Header, body []byte) {
-	s.mcacheMu.Lock()
-	defer s.mcacheMu.Unlock()
-	s.mcache.Add(hash, memCacheEntry{
-		header:  trimCacheHeader(hdr),
-		body:    body,
-		expires: time.Now().Add(maxAge),
+	s.mcache.Put(hash, memCacheEntry{
+		header: trimCacheHeader(hdr),
+		body:   body,
 	})
+	s.expire.After(maxAge, scheddle.Run(func() {
+		s.mcache.Remove(hash)
+	}))
 }
 
 var keepHeader = []string{
@@ -158,7 +152,6 @@ func setXCacheInfo(h http.Header, result, hash string) {
 
 // memCacheEntry is the format of entries in the memory cache.
 type memCacheEntry struct {
-	header  http.Header
-	body    []byte
-	expires time.Time
+	header http.Header
+	body   []byte
 }

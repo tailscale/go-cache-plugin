@@ -48,10 +48,14 @@ github.com/creachadair/flax v0.0.1 h1:it+joEf9aEUalaV7XWll/pk6zA4/FbNvMImW9q/lS8
 github.com/creachadair/flax v0.0.1/go.mod h1:K8bFvn8hMdAljQkaKNc7I3os5Wk36JxkyCkfdZ7S8d4=
 github.com/creachadair/gocache v0.0.0-20240904225701-6c4617815112 h1:FSlFO2eztBGGzp67D2z/eeNe5U+AZyj4g/CjKf0AHbo=
 github.com/creachadair/gocache v0.0.0-20240904225701-6c4617815112/go.mod h1:vkGW73GdzBPQZJdFlPBZVzFcG7lTxIgDY0+U30mp3xs=
-github.com/creachadair/mds v0.18.1 h1:lq2JufNm5Vfkdolf9Z+2shiw7r8XJgLSZniLHUFYJcI=
-github.com/creachadair/mds v0.18.1/go.mod h1:4b//mUiL8YldH6TImXjmW45myzTLNS1LLjOmrk888eg=
+github.com/creachadair/mds v0.19.2 h1:I5OdjsrG2jqGklMcyv50Iqo6gTrwUSIpIJVSnlVw85c=
+github.com/creachadair/mds v0.19.2/go.mod h1:4b//mUiL8YldH6TImXjmW45myzTLNS1LLjOmrk888eg=
 github.com/creachadair/mhttp v0.0.0-20240904023549-156b88d21c62 h1:6OEfFAgnbvhEDAR83DBUbvImn68DH2NpqcXrwID9Vbs=
 github.com/creachadair/mhttp v0.0.0-20240904023549-156b88d21c62/go.mod h1:Vito16r0HqXVEcwjz5Z9PLdFEbX016lCOV6iVgH06tc=
+github.com/creachadair/msync v0.2.1 h1:nBrUkGnk+vhEO+fe6fEMcT6Reo/C9Oc4s62bL4Bj/Wo=
+github.com/creachadair/msync v0.2.1/go.mod h1:fMAB2Ihnsojvz5nRxqzEEUmHgW2/CEKY64VPP4VskSY=
+github.com/creachadair/scheddle v0.0.0-20240907053453-f3bdd9f33c58 h1:ZH2lplzOAJitYaaf427wVWo8tijhPZedhvbNXGwnTAs=
+github.com/creachadair/scheddle v0.0.0-20240907053453-f3bdd9f33c58/go.mod h1:/IRMmOFNVSrAMzgcOYcdGOFJf4RU4UurRHvMykHEzJc=
 github.com/creachadair/taskgroup v0.9.1 h1:oam4POtt6PpmUr4us+ycUUfb2mPWc0RmIycte2oWoWw=
 github.com/creachadair/taskgroup v0.9.1/go.mod h1:9oDDPt/5QPS4iylvPMC81GRlj+1je8AFDbjUh4zaQWo=
 github.com/creachadair/tlsutil v0.0.0-20240901051800-c769f173a559 h1:8hlU8ebt2lI//6sFj6ICE6mN6c6Uvj4588XilSqpmu8=
@@ -64,8 +68,6 @@ github.com/frankban/quicktest v1.14.6 h1:7Xjx+VpznH+oBnejlPUj8oUpdxnVs4f8XU8WnHk
 github.com/frankban/quicktest v1.14.6/go.mod h1:4ptaffx2x8+WTWXmUCuVU6aPUX1/Mz7zb5vbUoiM6w0=
 github.com/go-json-experiment/json v0.0.0-20231102232822-2e55bd4e08b0 h1:ymLjT4f35nQbASLnvxEde4XOBL+Sn7rFuV+FOJqkljg=
 github.com/go-json-experiment/json v0.0.0-20231102232822-2e55bd4e08b0/go.mod h1:6daplAwHHGbUGib4990V3Il26O0OC4aRyvewaaAihaA=
-github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da h1:oI5xCqsCo564l8iNU+DwB5epxmsaqB+rhGL0m5jtYqE=
-github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da/go.mod h1:cIg4eruTrX1D+g88fzRXU5OdNfaM+9IcxsU14FzY7Hc=
 github.com/google/go-cmp v0.6.0 h1:ofyhxvXcZhMsU5ulbFiLKl/XBFqE1GSq7atu8tAmTRI=
 github.com/google/go-cmp v0.6.0/go.mod h1:17dUlkBOakJ0+DkrSSNjCkIjxS6bF9zb3elmeNGIjoY=
 github.com/google/uuid v1.6.0 h1:NIvaJDMOsjHA8n1jAhLSgzrAzy1Hgr+hNrb57e+94F0=

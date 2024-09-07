@@ -31,8 +31,9 @@ import (
 	"sync"
 	"time"
 
+	"github.com/creachadair/mds/cache"
+	"github.com/creachadair/scheddle"
 	"github.com/creachadair/taskgroup"
-	"github.com/golang/groupcache/lru"
 	"github.com/tailscale/go-cache-plugin/lib/s3util"
 )
 
@@ -89,9 +90,8 @@ type Server struct {
 	initOnce sync.Once
 	tasks    *taskgroup.Group
 	start    func(taskgroup.Task) *taskgroup.Group
-
-	mcacheMu sync.Mutex // protects mcache
-	mcache   *lru.Cache // short-lived mutable objects
+	mcache   *cache.Cache[string, memCacheEntry] // short-lived mutable objects
+	expire   *scheddle.Queue                     // cache expirations
 
 	reqReceived  expvar.Int // total requests received
 	reqMemoryHit expvar.Int // hit in memory cache (volatile)
@@ -114,7 +114,14 @@ func (s *Server) init() {
 	s.initOnce.Do(func() {
 		nt := runtime.NumCPU()
 		s.tasks, s.start = taskgroup.New(nil).Limit(nt)
-		s.mcache = lru.New(1 << 16)
+		s.mcache = cache.New(cache.Config[string, memCacheEntry]{
+			Limit: 10 << 20,
+			Store: cache.LRU[string, memCacheEntry](),
+			Size: func(e memCacheEntry) int64 {
+				return int64(len(e.body))
+			},
+		})
+		s.expire = scheddle.NewQueue(nil)
 	})
 }
 
