@@ -8,7 +8,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/config v1.27.28
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.59.0
 	github.com/creachadair/atomicfile v0.3.5
-	github.com/creachadair/command v0.1.14
+	github.com/creachadair/command v0.1.15
 	github.com/creachadair/flax v0.0.1
 	github.com/creachadair/gocache v0.0.0-20240904225701-6c4617815112
 	github.com/creachadair/mds v0.19.2

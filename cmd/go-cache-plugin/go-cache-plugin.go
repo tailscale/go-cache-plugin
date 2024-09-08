@@ -78,8 +78,7 @@ listening on the specified port.`,
 			command.VersionCommand(),
 		},
 	}
-	env := root.NewEnv(nil).MergeFlags(true)
-	command.RunOrFail(env, os.Args[1:])
+	command.RunOrFail(root.NewEnv(nil), os.Args[1:])
 }
 
 // getBucketRegion reports the specified region for the given bucket.
