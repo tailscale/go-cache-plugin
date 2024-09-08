@@ -52,10 +52,10 @@ github.com/creachadair/mds v0.19.2 h1:I5OdjsrG2jqGklMcyv50Iqo6gTrwUSIpIJVSnlVw85
 github.com/creachadair/mds v0.19.2/go.mod h1:4b//mUiL8YldH6TImXjmW45myzTLNS1LLjOmrk888eg=
 github.com/creachadair/mhttp v0.0.0-20240907154916-d408c0542750 h1:fJzQV75gKAfx1Od7EiQI9rn0wTvO7Uc/YgQW54y77dQ=
 github.com/creachadair/mhttp v0.0.0-20240907154916-d408c0542750/go.mod h1:WDSdP3YUQE4YJNxq77RUCZRIvh1l2o8y58bbHsBffo4=
-github.com/creachadair/msync v0.2.1 h1:nBrUkGnk+vhEO+fe6fEMcT6Reo/C9Oc4s62bL4Bj/Wo=
-github.com/creachadair/msync v0.2.1/go.mod h1:fMAB2Ihnsojvz5nRxqzEEUmHgW2/CEKY64VPP4VskSY=
-github.com/creachadair/scheddle v0.0.0-20240907154456-46e5c8f476f4 h1:Va80vtx4UE/f9zUj9Yy2rDlDmcfbiDlYJVWuI4GQPIU=
-github.com/creachadair/scheddle v0.0.0-20240907154456-46e5c8f476f4/go.mod h1:4Xfyc3F8gDPEq3VHBiUfFiBoLSweBoftjaUDj116Gao=
+github.com/creachadair/msync v0.3.0 h1:7FoPzwrM4gAdfsj7mcVyodKV82fArJaKcgr9j9whYww=
+github.com/creachadair/msync v0.3.0/go.mod h1:XjAfMt+upDhbx3FeGJ1zkqQIm55E9xw/pWzITwVaIoI=
+github.com/creachadair/scheddle v0.0.0-20240908173745-88f3b31b6673 h1:85ljB173tXh90vjZ9G6R87iTm7TXhzWMjGfy1lCPJBc=
+github.com/creachadair/scheddle v0.0.0-20240908173745-88f3b31b6673/go.mod h1:xDvUF22JvMOvwwEsHUUIDqq0az2rT7CsnDioFTIxvHE=
 github.com/creachadair/taskgroup v0.9.3 h1:PGvqKo+gvzckr/IL69Lj4aKzOSwY5cJBMZFlvW5eidU=
 github.com/creachadair/taskgroup v0.9.3/go.mod h1:9oDDPt/5QPS4iylvPMC81GRlj+1je8AFDbjUh4zaQWo=
 github.com/creachadair/tlsutil v0.0.0-20240907154432-0ca1e46ff43d h1:euNk+jFY3ytIBBMtXY80gbMK0pA4bXTYHbkxwEUgnKU=

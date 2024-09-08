@@ -13,7 +13,7 @@ require (
 	github.com/creachadair/gocache v0.0.0-20240904225701-6c4617815112
 	github.com/creachadair/mds v0.19.2
 	github.com/creachadair/mhttp v0.0.0-20240907154916-d408c0542750
-	github.com/creachadair/scheddle v0.0.0-20240907154456-46e5c8f476f4
+	github.com/creachadair/scheddle v0.0.0-20240908173745-88f3b31b6673
 	github.com/creachadair/taskgroup v0.9.3
 	github.com/creachadair/tlsutil v0.0.0-20240907154432-0ca1e46ff43d
 	github.com/goproxy/goproxy v0.17.2
@@ -43,7 +43,7 @@ require (
 	github.com/aws/smithy-go v1.20.4 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
-	github.com/creachadair/msync v0.2.1 // indirect
+	github.com/creachadair/msync v0.3.0 // indirect
 	github.com/go-json-experiment/json v0.0.0-20231102232822-2e55bd4e08b0 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/prometheus/client_golang v1.19.1 // indirect
