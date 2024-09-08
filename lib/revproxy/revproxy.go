@@ -114,13 +114,9 @@ func (s *Server) init() {
 	s.initOnce.Do(func() {
 		nt := runtime.NumCPU()
 		s.tasks, s.start = taskgroup.New(nil).Limit(nt)
-		s.mcache = cache.New(cache.Config[string, memCacheEntry]{
-			Limit: 10 << 20,
-			Store: cache.LRU[string, memCacheEntry](),
-			Size: func(e memCacheEntry) int64 {
-				return int64(len(e.body))
-			},
-		})
+		s.mcache = cache.New(10<<20, cache.LRU[string, memCacheEntry]().
+			WithSize(entrySize),
+		)
 		s.expire = scheddle.NewQueue(nil)
 	})
 }

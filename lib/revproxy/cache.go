@@ -155,3 +155,5 @@ type memCacheEntry struct {
 	header http.Header
 	body   []byte
 }
+
+func entrySize(e memCacheEntry) int64 { return int64(len(e.body)) }

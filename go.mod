@@ -11,7 +11,7 @@ require (
 	github.com/creachadair/command v0.1.15
 	github.com/creachadair/flax v0.0.1
 	github.com/creachadair/gocache v0.0.0-20240904225701-6c4617815112
-	github.com/creachadair/mds v0.19.2
+	github.com/creachadair/mds v0.19.3
 	github.com/creachadair/mhttp v0.0.0-20240907154916-d408c0542750
 	github.com/creachadair/scheddle v0.0.0-20240908173745-88f3b31b6673
 	github.com/creachadair/taskgroup v0.9.3

@@ -48,8 +48,8 @@ github.com/creachadair/flax v0.0.1 h1:it+joEf9aEUalaV7XWll/pk6zA4/FbNvMImW9q/lS8
 github.com/creachadair/flax v0.0.1/go.mod h1:K8bFvn8hMdAljQkaKNc7I3os5Wk36JxkyCkfdZ7S8d4=
 github.com/creachadair/gocache v0.0.0-20240904225701-6c4617815112 h1:FSlFO2eztBGGzp67D2z/eeNe5U+AZyj4g/CjKf0AHbo=
 github.com/creachadair/gocache v0.0.0-20240904225701-6c4617815112/go.mod h1:vkGW73GdzBPQZJdFlPBZVzFcG7lTxIgDY0+U30mp3xs=
-github.com/creachadair/mds v0.19.2 h1:I5OdjsrG2jqGklMcyv50Iqo6gTrwUSIpIJVSnlVw85c=
-github.com/creachadair/mds v0.19.2/go.mod h1:4b//mUiL8YldH6TImXjmW45myzTLNS1LLjOmrk888eg=
+github.com/creachadair/mds v0.19.3 h1:qBkZ5d8SNtJZXQTYs7tYqEIwCD6ifchNTIjhYRThLNw=
+github.com/creachadair/mds v0.19.3/go.mod h1:4b//mUiL8YldH6TImXjmW45myzTLNS1LLjOmrk888eg=
 github.com/creachadair/mhttp v0.0.0-20240907154916-d408c0542750 h1:fJzQV75gKAfx1Od7EiQI9rn0wTvO7Uc/YgQW54y77dQ=
 github.com/creachadair/mhttp v0.0.0-20240907154916-d408c0542750/go.mod h1:WDSdP3YUQE4YJNxq77RUCZRIvh1l2o8y58bbHsBffo4=
 github.com/creachadair/msync v0.3.0 h1:7FoPzwrM4gAdfsj7mcVyodKV82fArJaKcgr9j9whYww=
