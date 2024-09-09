@@ -32,6 +32,7 @@ import (
 	"time"
 
 	"github.com/creachadair/mds/cache"
+	"github.com/creachadair/mds/mapset"
 	"github.com/creachadair/scheddle"
 	"github.com/creachadair/taskgroup"
 	"github.com/tailscale/go-cache-plugin/lib/s3util"
@@ -234,7 +235,8 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if canCache {
 		proxy.ModifyResponse = func(rsp *http.Response) error {
 			maxAge, isVolatile := s.canMemoryCache(rsp)
-			if !isVolatile && !s.canCacheResponse(rsp) {
+			canCacheResponse := s.canCacheResponse(rsp)
+			if !canCacheResponse && !isVolatile {
 				// A response we cannot cache at all.
 				setXCacheInfo(rsp.Header, "fetch, uncached", "")
 				s.rspNotCached.Add(1)
@@ -249,7 +251,8 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				Reader: io.TeeReader(rsp.Body, &buf),
 				Closer: rsp.Body,
 			}
-			if isVolatile {
+			if !canCacheResponse && isVolatile {
+				// A volatile response we can cache temporarily.
 				setXCacheInfo(rsp.Header, "fetch, cached, volatile", hash)
 				updateCache = func() {
 					body := buf.Bytes()
@@ -323,7 +326,7 @@ func hostMatchesTarget(host string, targets []string) bool {
 
 // canCacheRequest reports whether r is a request whose response can be cached.
 func (s *Server) canCacheRequest(r *http.Request) bool {
-	return r.Method == "GET" && !slices.Contains(splitCacheControl(r.Header), "no-store")
+	return r.Method == "GET" && !parseCacheControl(r.Header.Get("Cache-Control")).Keys.Has("no-store")
 }
 
 // canCacheResponse reports whether r is a response whose body can be cached.
@@ -331,8 +334,36 @@ func (s *Server) canCacheResponse(rsp *http.Response) bool {
 	if rsp.StatusCode != http.StatusOK {
 		return false
 	}
-	cc := splitCacheControl(rsp.Header)
-	return !slices.Contains(cc, "no-store") && slices.Contains(cc, "immutable")
+	cc := parseCacheControl(rsp.Header.Get("Cache-Control"))
+	if cc.Keys.Has("no-store") {
+		return false
+	} else if cc.Keys.Has("immutable") {
+		return true
+	}
+
+	// We treat a response that is not immutable but requires validation as
+	// cacheable if its max-age is so long it doesn't matter.
+	const goodLongTime = 60 * 24 * time.Hour
+	return cc.Keys.Has("must-revalidate") && cc.MaxAge > goodLongTime
+}
+
+type cacheControl struct {
+	Keys   mapset.Set[string]
+	MaxAge time.Duration
+}
+
+func parseCacheControl(s string) (out cacheControl) {
+	for _, v := range strings.Split(s, ",") {
+		key, val, ok := strings.Cut(strings.TrimSpace(v), "=")
+		if ok && key == "max-age" {
+			sec, err := strconv.Atoi(val)
+			if err == nil {
+				out.MaxAge = time.Duration(sec) * time.Second
+			}
+		}
+		out.Keys.Add(key)
+	}
+	return
 }
 
 // canMemoryCache reports whether r is a volatile response whose body can be
@@ -342,21 +373,19 @@ func (s *Server) canMemoryCache(rsp *http.Response) (time.Duration, bool) {
 	if rsp.StatusCode != http.StatusOK {
 		return 0, false
 	}
-	var maxAge time.Duration
-	for _, v := range splitCacheControl(rsp.Header) {
-		if v == "no-store" || v == "immutable" {
-			return 0, false // don't cache immutable things in memory
-		}
-		sfx, ok := strings.CutPrefix(v, "max-age=")
-		if !ok {
-			continue
-		}
-		sec, err := strconv.Atoi(sfx)
-		if err == nil {
-			maxAge = time.Duration(min(sec, 3600)) * time.Second
-		}
+	cc := parseCacheControl(rsp.Header.Get("Cache-Control"))
+	if cc.Keys.Has("no-store") || cc.Keys.Has("no-cache") {
+		// While no-cache doesn't mean we can't cache it, it requires
+		// re-validation before reusing the response, so treat that as if it were
+		// no-store.
+		return 0, false
 	}
-	return maxAge, maxAge > 0
+
+	// We'll cache things in memory if they aren't expected to last too long.
+	if cc.MaxAge > 0 && cc.MaxAge < time.Hour {
+		return cc.MaxAge, true
+	}
+	return 0, false
 }
 
 // hashRequest generates the storage digest for the specified request URL.
@@ -374,13 +403,4 @@ func writeCachedResponse(w http.ResponseWriter, hdr http.Header, body []byte) {
 		}
 	}
 	w.Write(body)
-}
-
-// splitCacheControl returns the tokens of the cache control header from h.
-func splitCacheControl(h http.Header) []string {
-	fs := strings.Split(h.Get("Cache-Control"), ",")
-	for i, v := range fs {
-		fs[i] = strings.TrimSpace(v)
-	}
-	return fs
 }
