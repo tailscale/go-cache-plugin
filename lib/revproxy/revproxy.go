@@ -87,6 +87,36 @@ type Server struct {
 	// discarded.
 	Logf func(string, ...any)
 
+	// LogRequests, if true, enables detailed (but noisy) debug logging of all
+	// requests handled by the reverse proxy. Logs are written to Logf.
+	//
+	// Each request is presented in the format:
+	//
+	//     B U:"<url>" H:<digest> C:<bool>
+	//     E H:<digest> <disposition> B:<bytes> (<time> elapsed)
+	//     - H:<digest> miss
+	//
+	// The "B" line is when the request began, and "E" when it was finished.
+	// The abbreviated fields are:
+	//
+	//     U:       -- request URL
+	//     H:       -- request URL digest (cache key)
+	//     C:       -- whether the request is cacheable (true/false)
+	//     B:       -- body size in bytes (for hits)
+	//
+	// The dispositions of a request are:
+	//
+	//     hit mem  -- cache hit in memory (volatile)
+	//     hit disk -- cache hit in local disk
+	//     hit S3   -- cache hit in S3 (faulted to disk)
+	//     fetch    -- fetched from the origin server
+	//
+	// On fetches, the "RC" tag indicates whether the response is cacheable,
+	// with "no" meaning it was not cached at all, "mem" meaning it was cached
+	// as a short-lived volatile response in memory, and "yes" meaning it was
+	// cached on disk (and S3).
+	LogRequests bool
+
 	initOnce sync.Once
 	tasks    *taskgroup.Group
 	start    func(taskgroup.Task) *taskgroup.Group
@@ -157,12 +187,15 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	hash := hashRequestURL(r.URL)
 	canCache := s.canCacheRequest(r)
+	s.vlogf("B U:%q H:%s C:%v", r.URL, hash, canCache)
+	start := time.Now()
 	if canCache {
 		// Check for a hit on this object in the memory cache.
 		if data, hdr, err := s.cacheLoadMemory(hash); err == nil {
 			s.reqMemoryHit.Add(1)
 			setXCacheInfo(hdr, "hit, memory", hash)
 			writeCachedResponse(w, hdr, data)
+			s.vlogf("E H:%s hit mem B:%d (%v elapsed)", hash, len(data), time.Since(start))
 			return
 		}
 
@@ -171,6 +204,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			s.reqLocalHit.Add(1)
 			setXCacheInfo(hdr, "hit, local", hash)
 			writeCachedResponse(w, hdr, data)
+			s.vlogf("E H:%s hit disk B:%d (%v elapsed)", hash, len(data), time.Since(start))
 			return
 		}
 		s.reqLocalMiss.Add(1)
@@ -183,9 +217,11 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			}
 			setXCacheInfo(hdr, "hit, remote", hash)
 			writeCachedResponse(w, hdr, data)
+			s.vlogf("E H:%s hit S3 B:%d (%v elapsed)", hash, len(data), time.Since(start))
 			return
 		}
 		s.reqFaultMiss.Add(1)
+		s.vlogf("- H:%s miss", hash)
 	}
 
 	// Reaching here, the object is not already cached locally so we have to
@@ -202,6 +238,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				// A response we cannot cache at all.
 				setXCacheInfo(rsp.Header, "fetch, uncached", "")
 				s.rspNotCached.Add(1)
+				s.vlogf("E H:%s fetch RC:no (%v elapsed)", hash, time.Since(start))
 				return nil
 			}
 
@@ -220,6 +257,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 					s.rspSaveMem.Add(1)
 
 					// N.B. Don't persist on disk or in S3.
+					s.vlogf("E H:%s fetch RC:mem B:%d (%v elapsed)", hash, len(body), time.Since(start))
 				}
 			} else {
 				setXCacheInfo(rsp.Header, "fetch, cached", hash)
@@ -235,6 +273,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 						s.rspSaveBytes.Add(int64(len(body)))
 						s.start(s.cacheStoreS3(hash, rsp.Header, body))
 					}
+					s.vlogf("E H:%s fetch RC:yes B:%d (%v elapsed)", hash, len(body), time.Since(start))
 				}
 			}
 			return nil
@@ -269,6 +308,12 @@ func (s *Server) makeKey(hash string) string { return path.Join(s.KeyPrefix, has
 func (s *Server) logf(msg string, args ...any) {
 	if s.Logf != nil {
 		s.Logf(msg, args...)
+	}
+}
+
+func (s *Server) vlogf(msg string, args ...any) {
+	if s.LogRequests {
+		s.logf(msg, args...)
 	}
 }
 

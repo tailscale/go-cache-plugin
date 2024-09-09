@@ -110,8 +110,8 @@ func initModProxy(env *command.Env, s3c *s3util.Client) (_ http.Handler, cleanup
 		S3Client:    s3c,
 		KeyPrefix:   path.Join(flags.KeyPrefix, "module"),
 		MaxTasks:    flags.S3Concurrency,
-		LogRequests: flags.DebugLog,
 		Logf:        vprintf,
+		LogRequests: flags.DebugLog,
 	}
 	cleanup = func() { vprintf("close cacher (err=%v)", cacher.Close()) }
 	proxy := &goproxy.Goproxy{
@@ -158,11 +158,12 @@ func initRevProxy(env *command.Env, s3c *s3util.Client, g *taskgroup.Group) (htt
 	}
 
 	proxy := &revproxy.Server{
-		Targets:   hosts,
-		Local:     revCachePath,
-		S3Client:  s3c,
-		KeyPrefix: path.Join(flags.KeyPrefix, "revproxy"),
-		Logf:      vprintf,
+		Targets:     hosts,
+		Local:       revCachePath,
+		S3Client:    s3c,
+		KeyPrefix:   path.Join(flags.KeyPrefix, "revproxy"),
+		Logf:        vprintf,
+		LogRequests: flags.DebugLog,
 	}
 	bridge := &proxyconn.Bridge{
 		Addrs:   hosts,
