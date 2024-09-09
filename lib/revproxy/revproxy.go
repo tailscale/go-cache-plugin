@@ -187,7 +187,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	hash := hashRequestURL(r.URL)
 	canCache := s.canCacheRequest(r)
-	s.vlogf("B U:%q H:%s C:%v", r.URL, hash, canCache)
+	s.vlogf("rp B U:%q H:%s C:%v", r.URL, hash, canCache)
 	start := time.Now()
 	if canCache {
 		// Check for a hit on this object in the memory cache.
@@ -195,7 +195,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			s.reqMemoryHit.Add(1)
 			setXCacheInfo(hdr, "hit, memory", hash)
 			writeCachedResponse(w, hdr, data)
-			s.vlogf("E H:%s hit mem B:%d (%v elapsed)", hash, len(data), time.Since(start))
+			s.vlogf("rp E H:%s hit mem B:%d (%v elapsed)", hash, len(data), time.Since(start))
 			return
 		}
 
@@ -204,7 +204,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			s.reqLocalHit.Add(1)
 			setXCacheInfo(hdr, "hit, local", hash)
 			writeCachedResponse(w, hdr, data)
-			s.vlogf("E H:%s hit disk B:%d (%v elapsed)", hash, len(data), time.Since(start))
+			s.vlogf("rp E H:%s hit disk B:%d (%v elapsed)", hash, len(data), time.Since(start))
 			return
 		}
 		s.reqLocalMiss.Add(1)
@@ -217,11 +217,11 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			}
 			setXCacheInfo(hdr, "hit, remote", hash)
 			writeCachedResponse(w, hdr, data)
-			s.vlogf("E H:%s hit S3 B:%d (%v elapsed)", hash, len(data), time.Since(start))
+			s.vlogf("rp E H:%s hit S3 B:%d (%v elapsed)", hash, len(data), time.Since(start))
 			return
 		}
 		s.reqFaultMiss.Add(1)
-		s.vlogf("- H:%s miss", hash)
+		s.vlogf("rp - H:%s miss", hash)
 	}
 
 	// Reaching here, the object is not already cached locally so we have to
@@ -238,7 +238,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				// A response we cannot cache at all.
 				setXCacheInfo(rsp.Header, "fetch, uncached", "")
 				s.rspNotCached.Add(1)
-				s.vlogf("E H:%s fetch RC:no (%v elapsed)", hash, time.Since(start))
+				s.vlogf("rp E H:%s fetch RC:no (%v elapsed)", hash, time.Since(start))
 				return nil
 			}
 
@@ -257,7 +257,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 					s.rspSaveMem.Add(1)
 
 					// N.B. Don't persist on disk or in S3.
-					s.vlogf("E H:%s fetch RC:mem B:%d (%v elapsed)", hash, len(body), time.Since(start))
+					s.vlogf("rp E H:%s fetch RC:mem B:%d (%v elapsed)", hash, len(body), time.Since(start))
 				}
 			} else {
 				setXCacheInfo(rsp.Header, "fetch, cached", hash)
@@ -273,7 +273,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 						s.rspSaveBytes.Add(int64(len(body)))
 						s.start(s.cacheStoreS3(hash, rsp.Header, body))
 					}
-					s.vlogf("E H:%s fetch RC:yes B:%d (%v elapsed)", hash, len(body), time.Since(start))
+					s.vlogf("rp E H:%s fetch RC:yes B:%d (%v elapsed)", hash, len(body), time.Since(start))
 				}
 			}
 			return nil
