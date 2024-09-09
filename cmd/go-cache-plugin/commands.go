@@ -33,8 +33,14 @@ var flags struct {
 	PrintMetrics  bool          `flag:"metrics,default=$GOCACHE_METRICS,Print summary metrics to stderr at exit"`
 	Expiration    time.Duration `flag:"expiry,default=$GOCACHE_EXPIRY,Cache expiration period (optional)"`
 	Verbose       bool          `flag:"v,default=$GOCACHE_VERBOSE,Enable verbose logging"`
-	DebugLog      bool          `flag:"debug,default=$GOCACHE_DEBUG,Enable detailed per-request debug logging (noisy)"`
+	DebugLog      int           `flag:"debug,default=$GOCACHE_DEBUG,Enable detailed per-request debug logging (noisy)"`
 }
+
+const (
+	debugBuildCache = 1 << iota
+	debugModProxy
+	debugRevProxy
+)
 
 // runDirect runs a cache communicating on stdin/stdout, for use as a direct
 // GOCACHEPROG plugin.

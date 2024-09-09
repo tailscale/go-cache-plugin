@@ -94,7 +94,7 @@ func getBucketRegion(ctx context.Context, bucket string) (string, error) {
 // vprintf acts as log.Printf if the --verbose flag is set; otherwise it
 // discards its input.
 func vprintf(msg string, args ...any) {
-	if flags.Verbose {
+	if flags.Verbose || flags.DebugLog != 0 {
 		log.Printf(msg, args...)
 	}
 }

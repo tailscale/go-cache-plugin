@@ -45,7 +45,7 @@ settings can be set via environment variables as well as flags.
     -c                GOCACHE_CONCURRENCY    int         runtime.NumCPU
     -u                GOCACHE_S3_CONCURRENCY duration    runtime.NumCPU
     -v                GOCACHE_VERBOSE        bool        false
-    --debug           GOCACHE_DEBUG          bool        false
+    --debug           GOCACHE_DEBUG          int         0 (see "help debug")
 
    --------------------------------------------------------------------
    Flag (serve)       Variable               Format      Default
@@ -134,5 +134,18 @@ The proxy supports both HTTP and HTTPS backends. For HTTPS proxy targets, the
 server generates its own TLS certificate, and tries to install a custom signing
 cert so that other tools will validate it. The ability to do this varies by
 system and configuration, however.`,
+	},
+	{
+		Name: "debug",
+		Help: `Enable detailed debug logging.
+
+The --debug flag enables (very) verbose debug logging for the components of the
+cache plugin. The value of the flag is a bit mask of:
+
+   1:  Go build cache
+   2:  Go module proxy and sum database
+   4:  HTTP reverse proxy
+
+The default is 0 (no debug logging).`,
 	},
 }

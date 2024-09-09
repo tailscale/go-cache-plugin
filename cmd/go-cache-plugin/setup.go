@@ -85,7 +85,7 @@ func initCacheServer(env *command.Env) (*gocache.Server, *s3util.Client, error) 
 		SetMetrics:  cache.SetMetrics,
 		MaxRequests: flags.Concurrency,
 		Logf:        vprintf,
-		LogRequests: flags.DebugLog,
+		LogRequests: flags.DebugLog&debugBuildCache != 0,
 	}
 	expvar.Publish("gocache_server", s.Metrics().Get("server"))
 	return s, client, nil
@@ -111,7 +111,7 @@ func initModProxy(env *command.Env, s3c *s3util.Client) (_ http.Handler, cleanup
 		KeyPrefix:   path.Join(flags.KeyPrefix, "module"),
 		MaxTasks:    flags.S3Concurrency,
 		Logf:        vprintf,
-		LogRequests: flags.DebugLog,
+		LogRequests: flags.DebugLog&debugModProxy != 0,
 	}
 	cleanup = func() { vprintf("close cacher (err=%v)", cacher.Close()) }
 	proxy := &goproxy.Goproxy{
@@ -163,7 +163,7 @@ func initRevProxy(env *command.Env, s3c *s3util.Client, g *taskgroup.Group) (htt
 		S3Client:    s3c,
 		KeyPrefix:   path.Join(flags.KeyPrefix, "revproxy"),
 		Logf:        vprintf,
-		LogRequests: flags.DebugLog,
+		LogRequests: flags.DebugLog&debugRevProxy != 0,
 	}
 	bridge := &proxyconn.Bridge{
 		Addrs:   hosts,
