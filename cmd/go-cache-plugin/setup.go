@@ -138,6 +138,35 @@ func initModProxy(env *command.Env, s3c *s3util.Client) (_ http.Handler, cleanup
 // initRevProxy initializes a reverse proxy if one is enabled.  If not, it
 // returns nil, nil to indicate a proxy was not requested. Otherwise, it
 // returns a [http.Handler] to dispatch reverse proxy requests.
+//
+// The reverse proxy runs two collaborating HTTP servers:
+//
+//   - The "inner" server is the proxy itself, which checks for cached values,
+//     forwards client requests to the remote origin (if necessary), and
+//     updates the cache with responses. The [revproxy.Server] is a lightweight
+//     wrapper around [net/http/httputil.ReverseProxy].
+//
+//   - The "outer" server is a bridge, that intercepts client requests.  The
+//     bridge forwards plain HTTP requests directly to the inner server.  For
+//     HTTPS CONNECT requests, the bridge hijacks the client connection and
+//     terminates TLS using a locally-signed certificate, and forwards the
+//     decrypted client requests to the inner caching proxy.
+//
+// The outer bridge is what receives requests routed by the main HTTP endpoint;
+// the inner server gets all its input via the bridge:
+//
+//	                          +------------+    +--------+
+//	client --[proxy-request]->|HTTP handler+--->| bridge +--CONNECT--+
+//	                          +------------+    +---+----+           |
+//	                                                |                |
+//	                                               HTTP              v
+//	                          +-------------+       |        +---------------+
+//	            [response]<---| cache proxy |<------+--------+ terminate TLS |
+//	                          +-------------+                +---------------+
+//
+// To the main HTTP listener, the bridge is an [http.Handler] that serves
+// requests routed to it. To the inner server, the bridge is a [net.Listener],
+// a source of client connections (with TLS terminated).
 func initRevProxy(env *command.Env, s3c *s3util.Client, g *taskgroup.Group) (http.Handler, error) {
 	if serveFlags.RevProxy == "" {
 		return nil, nil // OK, proxy is disabled
