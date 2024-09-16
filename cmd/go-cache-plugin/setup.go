@@ -53,7 +53,7 @@ func initCacheServer(env *command.Env) (*gocache.Server, *s3util.Client, error) 
 
 	cfg, err := config.LoadDefaultConfig(env.Context(), config.WithRegion(region))
 	if err != nil {
-		return nil, nil, fmt.Errorf("laod AWS config: %w", err)
+		return nil, nil, fmt.Errorf("load AWS config: %w", err)
 	}
 
 	vprintf("local cache directory: %s", flags.CacheDir)
