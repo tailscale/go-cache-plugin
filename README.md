@@ -88,5 +88,6 @@ export GOSUMDB='sum.golang.org http://locahost:5970/mod/sumdb/sum.golang.org'
 
 ## References
 
-- [Cache plugin proposal](https://github.com/golang/go/issues/59719)
-- [Module proxy documentation](https://proxy.golang.org)
+- [Cache plugin protocol (proposal)](https://github.com/golang/go/issues/59719)
+- [Cache plugin library](https://github.com/creachadair/gocache)
+- [Go module proxy documentation](https://proxy.golang.org)
