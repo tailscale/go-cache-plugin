@@ -76,7 +76,7 @@ type S3Cache struct {
 	// Tracks tasks pushing cache writes to S3.
 	initOnce sync.Once
 	push     *taskgroup.Group
-	start    func(taskgroup.Task) *taskgroup.Group
+	start    func(taskgroup.Task)
 
 	getLocalHit  expvar.Int // count of Get hits in the local cache
 	getFaultHit  expvar.Int // count of Get hits faulted in from S3

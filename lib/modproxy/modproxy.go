@@ -93,7 +93,7 @@ type S3Cacher struct {
 	// Tracks tasks interacting with S3 in the background.
 	initOnce sync.Once
 	tasks    *taskgroup.Group
-	start    func(taskgroup.Task) *taskgroup.Group
+	start    func(taskgroup.Task)
 	sema     *semaphore.Weighted
 
 	pathError     expvar.Int // errors constructing file paths

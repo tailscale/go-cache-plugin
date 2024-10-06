@@ -120,7 +120,7 @@ type Server struct {
 
 	initOnce sync.Once
 	tasks    *taskgroup.Group
-	start    func(taskgroup.Task) *taskgroup.Group
+	start    func(taskgroup.Task)
 	mcache   *cache.Cache[string, memCacheEntry] // short-lived mutable objects
 	expire   *scheddle.Queue                     // cache expirations
 

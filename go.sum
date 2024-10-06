@@ -56,8 +56,8 @@ github.com/creachadair/msync v0.3.0 h1:7FoPzwrM4gAdfsj7mcVyodKV82fArJaKcgr9j9whY
 github.com/creachadair/msync v0.3.0/go.mod h1:XjAfMt+upDhbx3FeGJ1zkqQIm55E9xw/pWzITwVaIoI=
 github.com/creachadair/scheddle v0.0.0-20240919010233-b6854e09d972 h1:bWA80ILWcqGxveRewDQwf4nRF8E90SiCxqVo0DaOFxg=
 github.com/creachadair/scheddle v0.0.0-20240919010233-b6854e09d972/go.mod h1:PwCiUu3BYgSeOurdoA/+kDA5X39Z9JXRKDGUpkeKPCY=
-github.com/creachadair/taskgroup v0.9.4 h1:dGMg5fkBc5c5QQ1LD6JZCMw45mH7ptXbW64WpTKzwbA=
-github.com/creachadair/taskgroup v0.9.4/go.mod h1:9oDDPt/5QPS4iylvPMC81GRlj+1je8AFDbjUh4zaQWo=
+github.com/creachadair/taskgroup v0.11.0 h1:ALpBe7Qds+JyM4ZQKISLFyapHRjVb00eOQ88S0mzVNo=
+github.com/creachadair/taskgroup v0.11.0/go.mod h1:9oDDPt/5QPS4iylvPMC81GRlj+1je8AFDbjUh4zaQWo=
 github.com/creachadair/tlsutil v0.0.0-20240907154432-0ca1e46ff43d h1:euNk+jFY3ytIBBMtXY80gbMK0pA4bXTYHbkxwEUgnKU=
 github.com/creachadair/tlsutil v0.0.0-20240907154432-0ca1e46ff43d/go.mod h1:QMYeSCtv6WYPxroqKtL1/5p4vG2SdWiBYiTxo4y0FMc=
 github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc h1:U9qPSI2PIWSS1VwoXQT9A3Wy9MM3WgvqSxFWenqJduM=
