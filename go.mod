@@ -14,7 +14,7 @@ require (
 	github.com/creachadair/mds v0.21.2
 	github.com/creachadair/mhttp v0.0.0-20240908014720-a77225a19b8b
 	github.com/creachadair/scheddle v0.0.0-20240919010233-b6854e09d972
-	github.com/creachadair/taskgroup v0.11.0
+	github.com/creachadair/taskgroup v0.12.0
 	github.com/creachadair/tlsutil v0.0.0-20240907154432-0ca1e46ff43d
 	github.com/goproxy/goproxy v0.17.2
 	golang.org/x/sync v0.8.0
