@@ -38,14 +38,14 @@ import (
 //
 // Each output object is stored in a file named:
 //
-//	[<prefix>/]object/<xx>/<object-id>
+//	[<prefix>/]output/<xx>/<object-id>
 //
 // The object and action IDs are encoded as lower-case hexadecimal strings,
 // with "<xx>" denoting the first two bytes of the ID to partition the space.
 //
 // The contents of each action file have the format:
 //
-//	<object-id> <timestamp>
+//	<output-id> <timestamp>
 //
 // where the object ID is hex encoded and the timestamp is Unix nanoseconds.
 // The object file contains just the binary data of the object.

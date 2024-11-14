@@ -2,15 +2,13 @@ module github.com/tailscale/go-cache-plugin
 
 go 1.23
 
-toolchain go1.23.1
-
 require (
 	github.com/aws/aws-sdk-go-v2/config v1.27.28
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.59.0
 	github.com/creachadair/atomicfile v0.3.5
 	github.com/creachadair/command v0.1.17
 	github.com/creachadair/flax v0.0.2
-	github.com/creachadair/gocache v0.0.0-20241113195030-6d6288323ca2
+	github.com/creachadair/gocache v0.0.0-20241114042026-37379ee3e160
 	github.com/creachadair/mds v0.21.4
 	github.com/creachadair/mhttp v0.0.0-20240908014720-a77225a19b8b
 	github.com/creachadair/scheddle v0.0.0-20240919010233-b6854e09d972
@@ -58,3 +56,5 @@ require (
 	golang.org/x/tools v0.23.0 // indirect
 	google.golang.org/protobuf v1.33.0 // indirect
 )
+
+retract v0.0.16
