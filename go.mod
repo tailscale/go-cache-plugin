@@ -2,8 +2,6 @@ module github.com/tailscale/go-cache-plugin
 
 go 1.23.1
 
-toolchain go1.23.3
-
 require (
 	github.com/aws/aws-sdk-go-v2/config v1.27.28
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.59.0
