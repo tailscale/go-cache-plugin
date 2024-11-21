@@ -1,6 +1,8 @@
 module github.com/tailscale/go-cache-plugin
 
-go 1.23
+go 1.23.1
+
+toolchain go1.23.3
 
 require (
 	github.com/aws/aws-sdk-go-v2/config v1.27.28
@@ -18,7 +20,7 @@ require (
 	golang.org/x/sync v0.8.0
 	golang.org/x/sys v0.22.0
 	honnef.co/go/tools v0.5.1
-	tailscale.com v1.72.1
+	tailscale.com v1.76.6
 )
 
 require (
@@ -51,8 +53,9 @@ require (
 	go4.org/mem v0.0.0-20220726221520-4f986261bf13 // indirect
 	go4.org/netipx v0.0.0-20231129151722-fdeea329fbba // indirect
 	golang.org/x/crypto v0.25.0 // indirect
-	golang.org/x/exp/typeparams v0.0.0-20240119083558-1b970713d09a // indirect
+	golang.org/x/exp/typeparams v0.0.0-20240314144324-c7f7c6466f7f // indirect
 	golang.org/x/mod v0.19.0 // indirect
+	golang.org/x/net v0.27.0 // indirect
 	golang.org/x/tools v0.23.0 // indirect
 	google.golang.org/protobuf v1.33.0 // indirect
 )
