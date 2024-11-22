@@ -215,11 +215,11 @@ func initRevProxy(env *command.Env, s3c *s3util.Client, g *taskgroup.Group) (htt
 	}
 	g.Go(func() error { return psrv.ServeTLS(bridge, "", "") })
 
-	g.Go(taskgroup.NoError(func() {
+	g.Run(func() {
 		<-env.Context().Done()
 		vprintf("stopping proxy bridge")
 		psrv.Shutdown(context.Background())
-	}))
+	})
 
 	expvar.Publish("revcache", proxy.Metrics())
 	vprintf("enabling reverse proxy for %s", strings.Join(proxy.Targets, ", "))

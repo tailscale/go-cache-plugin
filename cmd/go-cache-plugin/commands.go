@@ -94,11 +94,11 @@ func runServe(env *command.Env) error {
 	defer cancel()
 
 	var g taskgroup.Group
-	g.Go(taskgroup.NoError(func() {
+	g.Run(func() {
 		<-ctx.Done()
 		log.Printf("closing plugin listener")
 		lst.Close()
-	}))
+	})
 
 	// If a module proxy is enabled, start it.
 	modProxy, modCleanup, err := initModProxy(env.SetContext(ctx), s3c)
@@ -124,11 +124,11 @@ func runServe(env *command.Env) error {
 		}
 		g.Go(srv.ListenAndServe)
 		vprintf("HTTP server listening at %q", serveFlags.HTTP)
-		g.Go(taskgroup.NoError(func() {
+		g.Run(func() {
 			<-ctx.Done()
 			vprintf("stopping HTTP service")
 			srv.Shutdown(context.Background())
-		}))
+		})
 	}
 
 	for {
