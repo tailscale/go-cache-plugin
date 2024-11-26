@@ -54,7 +54,7 @@ To connect to a server running in this mode, use the `connect` subcommand:
 ```sh
 # Use the same port given to the server's --plugin flag.
 # Mnemonic: 5930 == (Go) (C)ache (P)lugin
-export GOCACHEPROG="go-cache-plugin connect 5930
+export GOCACHEPROG="go-cache-plugin connect 5930"
 go build ./...
 ```
 
