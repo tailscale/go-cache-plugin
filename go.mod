@@ -7,8 +7,8 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.68.0
 	github.com/creachadair/atomicfile v0.3.6
 	github.com/creachadair/command v0.1.19
-	github.com/creachadair/flax v0.0.2
-	github.com/creachadair/gocache v0.0.0-20241116020005-1ec9928002f3
+	github.com/creachadair/flax v0.0.3
+	github.com/creachadair/gocache v0.0.0-20241127030435-72bda9b224b2
 	github.com/creachadair/mds v0.22.0
 	github.com/creachadair/mhttp v0.0.0-20241114003125-97da0a4f17b1
 	github.com/creachadair/scheddle v0.0.0-20241121045015-b2e30c9594a1
