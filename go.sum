@@ -46,8 +46,8 @@ github.com/creachadair/command v0.1.19 h1:608PeK7JfGwhuyAJZnb0ijDS0bBz9XJif/6B3D
 github.com/creachadair/command v0.1.19/go.mod h1:Vfl1ld2a0hrW62gjhwcwF0rjCa9xQuC1s0vlW6OFesw=
 github.com/creachadair/flax v0.0.3 h1:9sCaEzh3/M4ZhNdrDYzQnY8pMGlI/UkEjjAta0PcyoI=
 github.com/creachadair/flax v0.0.3/go.mod h1:F1PML0JZLXSNDMNiRGK2yjm5f+L9QCHchyHBldFymj8=
-github.com/creachadair/gocache v0.0.0-20241127030435-72bda9b224b2 h1:YamjjbG8Hy15TYQqVtY6U7hwFy+nMFp28utADxRN+B0=
-github.com/creachadair/gocache v0.0.0-20241127030435-72bda9b224b2/go.mod h1:9xEdYNeQJtFIphr0h7qw99mgwEhwps8KHkHFFWf5jXc=
+github.com/creachadair/gocache v0.0.0-20241127144514-94c05cd1f822 h1:g21tXjPq7sjc3EtY444+EYEswsZMqPB8cKO9UqpCxVE=
+github.com/creachadair/gocache v0.0.0-20241127144514-94c05cd1f822/go.mod h1:9xEdYNeQJtFIphr0h7qw99mgwEhwps8KHkHFFWf5jXc=
 github.com/creachadair/mds v0.22.0 h1:IRm4fWRKF9Pi4k3DEfgdlhMMYVxyef9FFall4r0GP4A=
 github.com/creachadair/mds v0.22.0/go.mod h1:ArfS0vPHoLV/SzuIzoqTEZfoYmac7n9Cj8XPANHocvw=
 github.com/creachadair/mhttp v0.0.0-20241114003125-97da0a4f17b1 h1:iS+42OD/aOz5Nb9/pDX5VQBxZLEbHLbCsPufaPYIjBY=

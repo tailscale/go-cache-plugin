@@ -8,7 +8,7 @@ require (
 	github.com/creachadair/atomicfile v0.3.6
 	github.com/creachadair/command v0.1.19
 	github.com/creachadair/flax v0.0.3
-	github.com/creachadair/gocache v0.0.0-20241127030435-72bda9b224b2
+	github.com/creachadair/gocache v0.0.0-20241127144514-94c05cd1f822
 	github.com/creachadair/mds v0.22.0
 	github.com/creachadair/mhttp v0.0.0-20241114003125-97da0a4f17b1
 	github.com/creachadair/scheddle v0.0.0-20241121045015-b2e30c9594a1
@@ -58,4 +58,7 @@ require (
 	google.golang.org/protobuf v1.33.0 // indirect
 )
 
-retract v0.0.16
+retract (
+	v0.0.19
+	v0.0.16
+)
