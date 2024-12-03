@@ -77,6 +77,7 @@ go-cache-plugin serve \
 To tell the Go toolchain about the proxy, set:
 
 ```sh
+# Mnemonic: 5970 == (Go) (M)odule (P)roxy
 export GOPROXY=http://localhost:5970/mod   # use the --http address
 ```
 
