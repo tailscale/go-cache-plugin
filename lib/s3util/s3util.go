@@ -122,18 +122,18 @@ func (c *Client) Put(ctx context.Context, key string, data io.Reader) error {
 // close the reader when finished.
 //
 // If the key is not found, the resulting error satisfies [fs.ErrNotExist].
-func (c *Client) Get(ctx context.Context, key string) (io.ReadCloser, *int64, error) {
+func (c *Client) Get(ctx context.Context, key string) (io.ReadCloser, int64, error) {
 	rsp, err := c.Client.GetObject(ctx, &s3.GetObjectInput{
 		Bucket: &c.Bucket,
 		Key:    &key,
 	})
 	if err != nil {
 		if IsNotExist(err) {
-			return nil, nil, fmt.Errorf("key %q: %w", key, fs.ErrNotExist)
+			return nil, -1, fmt.Errorf("key %q: %w", key, fs.ErrNotExist)
 		}
-		return nil, nil, err
+		return nil, -1, err
 	}
-	return rsp.Body, rsp.ContentLength, nil
+	return rsp.Body, *rsp.ContentLength, nil
 }
 
 // GetData returns the contents of the specified key from S3. It is a shorthand

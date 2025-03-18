@@ -134,7 +134,7 @@ func (s *S3Cache) Get(ctx context.Context, actionID string) (outputID, diskPath 
 	diskPath, err = s.Local.Put(ctx, gocache.Object{
 		ActionID: actionID,
 		OutputID: outputID,
-		Size:     *size,
+		Size:     size,
 		Body:     object,
 		ModTime:  mtime,
 	})
