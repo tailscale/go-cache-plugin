@@ -158,7 +158,7 @@ func (c *S3Cacher) Get(ctx context.Context, name string) (_ io.ReadCloser, oerr 
 	}
 	defer c.sema.Release(1)
 
-	obj, err := c.S3Client.Get(ctx, c.makeKey(hash))
+	obj, _, err := c.S3Client.Get(ctx, c.makeKey(hash))
 	if errors.Is(err, fs.ErrNotExist) {
 		c.getFaultMiss.Add(1)
 		return nil, err

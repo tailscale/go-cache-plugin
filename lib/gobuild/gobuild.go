@@ -120,7 +120,7 @@ func (s *S3Cache) Get(ctx context.Context, actionID string) (outputID, diskPath 
 		return "", "", err
 	}
 
-	object, err := s.S3Client.Get(ctx, s.outputKey(outputID))
+	object, size, err := s.S3Client.Get(ctx, s.outputKey(outputID))
 	if err != nil {
 		// At this point we know the action exists, so if we can't read the
 		// object report it as an error rather than a cache miss.
@@ -134,6 +134,7 @@ func (s *S3Cache) Get(ctx context.Context, actionID string) (outputID, diskPath 
 	diskPath, err = s.Local.Put(ctx, gocache.Object{
 		ActionID: actionID,
 		OutputID: outputID,
+		Size:     *size,
 		Body:     object,
 		ModTime:  mtime,
 	})
