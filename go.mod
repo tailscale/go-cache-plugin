@@ -15,9 +15,9 @@ require (
 	github.com/creachadair/taskgroup v0.13.2
 	github.com/creachadair/tlsutil v0.0.0-20241111194928-a9f540254538
 	github.com/goproxy/goproxy v0.18.0
-	golang.org/x/sync v0.8.0
-	golang.org/x/sys v0.26.0
-	honnef.co/go/tools v0.5.1
+	golang.org/x/sync v0.11.0
+	golang.org/x/sys v0.30.0
+	honnef.co/go/tools v0.6.1
 	tailscale.com v1.76.6
 )
 
@@ -50,11 +50,11 @@ require (
 	github.com/prometheus/procfs v0.12.0 // indirect
 	go4.org/mem v0.0.0-20220726221520-4f986261bf13 // indirect
 	go4.org/netipx v0.0.0-20231129151722-fdeea329fbba // indirect
-	golang.org/x/crypto v0.28.0 // indirect
+	golang.org/x/crypto v0.33.0 // indirect
 	golang.org/x/exp/typeparams v0.0.0-20240314144324-c7f7c6466f7f // indirect
-	golang.org/x/mod v0.21.0 // indirect
-	golang.org/x/net v0.30.0 // indirect
-	golang.org/x/tools v0.23.0 // indirect
+	golang.org/x/mod v0.23.0 // indirect
+	golang.org/x/net v0.35.0 // indirect
+	golang.org/x/tools v0.30.0 // indirect
 	google.golang.org/protobuf v1.33.0 // indirect
 )
 
