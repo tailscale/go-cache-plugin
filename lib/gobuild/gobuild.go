@@ -10,7 +10,6 @@ import (
 	"errors"
 	"expvar"
 	"fmt"
-	"io"
 	"io/fs"
 	"os"
 	"path"
@@ -114,19 +113,14 @@ func (s *S3Cache) Get(ctx context.Context, actionID string) (outputID, diskPath 
 		}
 		return "", "", fmt.Errorf("[s3] read action %s: %w", actionID, err)
 	}
-	defer action.Close()
-	actionBytes, err := io.ReadAll(action)
-	if err != nil {
-		return "", "", err
-	}
 
 	// We got an action hit remotely, try to update the local copy.
-	outputID, mtime, err := parseAction(actionBytes)
+	outputID, mtime, err := parseAction(action)
 	if err != nil {
 		return "", "", err
 	}
 
-	object, err := s.S3Client.GetData(ctx, s.outputKey(outputID))
+	object, err := s.S3Client.Get(ctx, s.outputKey(outputID))
 	if err != nil {
 		// At this point we know the action exists, so if we can't read the
 		// object report it as an error rather than a cache miss.

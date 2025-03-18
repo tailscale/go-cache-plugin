@@ -138,8 +138,13 @@ func (c *Client) Get(ctx context.Context, key string) (io.ReadCloser, error) {
 
 // GetData returns the contents of the specified key from S3. It is a shorthand
 // for calling Get followed by io.ReadAll on the result.
-func (c *Client) GetData(ctx context.Context, key string) (io.ReadCloser, error) {
-	return c.Get(ctx, key)
+func (c *Client) GetData(ctx context.Context, key string) ([]byte, error) {
+	rc, err := c.Get(ctx, key)
+	if err != nil {
+		return nil, err
+	}
+	defer rc.Close()
+	return io.ReadAll(rc)
 }
 
 // PutCond writes the specified data to S3 under the given key if the key does

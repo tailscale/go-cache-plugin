@@ -50,11 +50,7 @@ func (s *Server) cacheLoadS3(ctx context.Context, hash string) ([]byte, http.Hea
 	if err != nil {
 		return nil, nil, err
 	}
-	byteSlice, err := io.ReadAll(data)
-	if err != nil {
-		return nil, nil, err
-	}
-	return parseCacheObject(byteSlice)
+	return parseCacheObject(data)
 }
 
 // cacheStoreS3 returns a task that writes the contents of body to the remote
