@@ -6,7 +6,6 @@
 package gobuild
 
 import (
-	"bytes"
 	"context"
 	"errors"
 	"expvar"
@@ -121,12 +120,13 @@ func (s *S3Cache) Get(ctx context.Context, actionID string) (outputID, diskPath 
 		return "", "", err
 	}
 
-	object, err := s.S3Client.GetData(ctx, s.outputKey(outputID))
+	object, size, err := s.S3Client.Get(ctx, s.outputKey(outputID))
 	if err != nil {
 		// At this point we know the action exists, so if we can't read the
 		// object report it as an error rather than a cache miss.
 		return "", "", fmt.Errorf("[s3] read object %s: %w", outputID, err)
 	}
+	defer object.Close()
 	s.getFaultHit.Add(1)
 
 	// Now we should have the body; poke it into the local cache.  Preserve the
@@ -134,8 +134,8 @@ func (s *S3Cache) Get(ctx context.Context, actionID string) (outputID, diskPath 
 	diskPath, err = s.Local.Put(ctx, gocache.Object{
 		ActionID: actionID,
 		OutputID: outputID,
-		Size:     int64(len(object)),
-		Body:     bytes.NewReader(object),
+		Size:     size,
+		Body:     object,
 		ModTime:  mtime,
 	})
 	return outputID, diskPath, err
