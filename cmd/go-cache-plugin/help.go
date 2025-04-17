@@ -19,8 +19,8 @@ See also "help environment".
 
 The plugin requires credentials to access S3. If you are running in AWS, it can
 get credentials from the instance metadata service; otherwise you will need to
-plumb AWS environment variables (AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY) or
-set up a configuration file.
+plumb AWS environment variables (AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, 
+AWS_ENDPOINT_URL) or set up a configuration file.
 
 See also: "help environment".
 Related:  "direct-mode", "serve-mode", "module-proxy", "reverse-proxy".`,
@@ -38,6 +38,7 @@ settings can be set via environment variables as well as flags.
     --cache-dir       GOCACHE_DIR            path        (required)
     --bucket          GOCACHE_S3_BUCKET      string      (required)
     --region          GOCACHE_S3_REGION      string      based on bucket
+    --s3-path-style   GOCACHE_S3_PATH_STYLE  bool        false
     --prefix          GOCACHE_KEY_PREFIX     string      ""
     --min-upload-size GOCACHE_MIN_SIZE       int64       0
     --metrics         GOCACHE_METRICS        bool        false
