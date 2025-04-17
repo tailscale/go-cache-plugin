@@ -59,7 +59,9 @@ func initCacheServer(env *command.Env) (*gocache.Server, *s3util.Client, error) 
 	vprintf("local cache directory: %s", flags.CacheDir)
 	vprintf("S3 cache bucket %q (%s)", flags.S3Bucket, region)
 	client := &s3util.Client{
-		Client: s3.NewFromConfig(cfg),
+		Client: s3.NewFromConfig(cfg, func(o *s3.Options) {
+			o.UsePathStyle = flags.S3PathStyle
+		}),
 		Bucket: flags.S3Bucket,
 	}
 	cache := &gobuild.S3Cache{
