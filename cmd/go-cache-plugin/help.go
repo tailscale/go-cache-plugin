@@ -19,7 +19,7 @@ See also "help environment".
 
 The plugin requires credentials to access S3. If you are running in AWS, it can
 get credentials from the instance metadata service; otherwise you will need to
-plumb AWS environment variables (AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, 
+plumb AWS environment variables (AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY,
 AWS_ENDPOINT_URL) or set up a configuration file.
 
 See also: "help environment".

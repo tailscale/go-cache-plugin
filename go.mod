@@ -1,6 +1,6 @@
 module github.com/tailscale/go-cache-plugin
 
-go 1.23.1
+go 1.24
 
 require (
 	github.com/aws/aws-sdk-go-v2/config v1.28.5
@@ -62,3 +62,5 @@ retract (
 	v0.0.19
 	v0.0.16
 )
+
+tool honnef.co/go/tools/cmd/staticcheck
