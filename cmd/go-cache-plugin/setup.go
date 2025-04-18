@@ -18,6 +18,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/creachadair/command"
@@ -51,7 +52,10 @@ func initCacheServer(env *command.Env) (*gocache.Server, *s3util.Client, error) 
 		return nil, nil, fmt.Errorf("create local cache: %w", err)
 	}
 
-	cfg, err := config.LoadDefaultConfig(env.Context(), config.WithRegion(region))
+	cfg, err := config.LoadDefaultConfig(env.Context(),
+		config.WithRegion(region),
+		config.WithResponseChecksumValidation(aws.ResponseChecksumValidationWhenRequired),
+	)
 	if err != nil {
 		return nil, nil, fmt.Errorf("load AWS config: %w", err)
 	}
