@@ -28,7 +28,8 @@ For example:
 
     GOCACHEPROG=` + command.ProgramName() + ` go build ./...
 
-Note that this requires a Go toolchain built with GOEXPERIMENT=cacheprog.
+Note that Go toolchains prior to 1.24 must be built with GOEXPERIMENT=cacheprog
+to enable this integration. Go 1.24 and later have it enabled by default.
 
 You must provide --cache-dir, --bucket, and --region, or the corresponding
 environment variables (see "help environment").  Entries in the cache are
