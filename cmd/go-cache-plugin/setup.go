@@ -52,10 +52,15 @@ func initCacheServer(env *command.Env) (*gocache.Server, *s3util.Client, error) 
 		return nil, nil, fmt.Errorf("create local cache: %w", err)
 	}
 
-	cfg, err := config.LoadDefaultConfig(env.Context(),
+	opts := []func(*config.LoadOptions) error{
 		config.WithRegion(region),
 		config.WithResponseChecksumValidation(aws.ResponseChecksumValidationWhenRequired),
-	)
+	}
+	if flags.S3Endpoint != "" {
+		vprintf("S3 endpoint URL: %s", flags.S3Endpoint)
+		opts = append(opts, config.WithBaseEndpoint(flags.S3Endpoint))
+	}
+	cfg, err := config.LoadDefaultConfig(env.Context(), opts...)
 	if err != nil {
 		return nil, nil, fmt.Errorf("load AWS config: %w", err)
 	}

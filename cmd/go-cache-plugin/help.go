@@ -33,29 +33,30 @@ To make it easier to configure this tool for multiple workflows, most of the
 settings can be set via environment variables as well as flags.
 
    --------------------------------------------------------------------
-   Flag (global)      Variable               Format      Default
+   Flag (global)        Variable                 Format      Default
    --------------------------------------------------------------------
-    --cache-dir       GOCACHE_DIR            path        (required)
-    --bucket          GOCACHE_S3_BUCKET      string      (required)
-    --region          GOCACHE_S3_REGION      string      based on bucket
-    --s3-path-style   GOCACHE_S3_PATH_STYLE  bool        false
-    --prefix          GOCACHE_KEY_PREFIX     string      ""
-    --min-upload-size GOCACHE_MIN_SIZE       int64       0
-    --metrics         GOCACHE_METRICS        bool        false
-    --expiry          GOCACHE_EXPIRY         duration    0
-    -c                GOCACHE_CONCURRENCY    int         runtime.NumCPU
-    -u                GOCACHE_S3_CONCURRENCY duration    runtime.NumCPU
-    -v                GOCACHE_VERBOSE        bool        false
-    --debug           GOCACHE_DEBUG          int         0 (see "help debug")
+    --cache-dir         GOCACHE_DIR              path        (required)
+    --bucket            GOCACHE_S3_BUCKET        string      (required)
+    --region            GOCACHE_S3_REGION        string      based on bucket
+    --s3-path-style     GOCACHE_S3_PATH_STYLE    bool        false
+    --s3-endpoint-url   GOCACHE_S3_ENDPOINT_URL  string      ""
+    --prefix            GOCACHE_KEY_PREFIX       string      ""
+    --min-upload-size   GOCACHE_MIN_SIZE         int64       0
+    --metrics           GOCACHE_METRICS          bool        false
+    --expiry            GOCACHE_EXPIRY           duration    0
+    -c                  GOCACHE_CONCURRENCY      int         runtime.NumCPU
+    -u                  GOCACHE_S3_CONCURRENCY   duration    runtime.NumCPU
+    -v                  GOCACHE_VERBOSE          bool        false
+    --debug             GOCACHE_DEBUG            int         0 (see "help debug")
 
    --------------------------------------------------------------------
-   Flag (serve)       Variable               Format      Default
+   Flag (serve)         Variable                 Format      Default
    --------------------------------------------------------------------
-    --plugin          GOCACHE_PLUGIN         port        (required)
-    --http            GOCACHE_HTTP           [host]:port ""
-    --modproxy        GOCACHE_MODPROXY       bool        false
-    --revproxy        GOCACHE_REVPROXY       host,...    ""
-    --sumdb           GOCACHE_SUMDB          host,...    ""
+    --plugin            GOCACHE_PLUGIN           port        (required)
+    --http              GOCACHE_HTTP             [host]:port ""
+    --modproxy          GOCACHE_MODPROXY         bool        false
+    --revproxy          GOCACHE_REVPROXY         host,...    ""
+    --sumdb             GOCACHE_SUMDB            host,...    ""
 
 See also: "help configure".`,
 	},
