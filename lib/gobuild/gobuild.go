@@ -55,9 +55,9 @@ type S3Cache struct {
 	// It is safe to use a tmpfs directory.
 	Local *cachedir.Dir
 
-	// S3Client is the S3 client used to read and write cache entries to the
+	// Client is the S3 client used to read and write cache entries to the
 	// backing store. It must be non-nil.
-	S3Client *s3util.Client
+	Client *s3util.Client
 
 	// KeyPrefix, if non-empty, is prepended to each key stored into S3, with an
 	// intervening slash.
@@ -105,7 +105,7 @@ func (s *S3Cache) Get(ctx context.Context, actionID string) (outputID, diskPath 
 
 	// Reaching here, either we got a cache miss or an error reading from local.
 	// Try reading the action from S3.
-	action, err := s.S3Client.GetData(ctx, s.actionKey(actionID))
+	action, err := s.Client.GetData(ctx, s.actionKey(actionID))
 	if err != nil {
 		if errors.Is(err, fs.ErrNotExist) {
 			s.getFaultMiss.Add(1)
@@ -120,7 +120,7 @@ func (s *S3Cache) Get(ctx context.Context, actionID string) (outputID, diskPath 
 		return "", "", err
 	}
 
-	object, size, err := s.S3Client.Get(ctx, s.outputKey(outputID))
+	object, size, err := s.Client.Get(ctx, s.outputKey(outputID))
 	if err != nil {
 		// At this point we know the action exists, so if we can't read the
 		// object report it as an error rather than a cache miss.
@@ -174,7 +174,7 @@ func (s *S3Cache) Put(ctx context.Context, obj gocache.Object) (diskPath string,
 		}
 
 		// Stage 2: Write the action record.
-		if err := s.S3Client.Put(ctx, s.actionKey(obj.ActionID),
+		if err := s.Client.Put(ctx, s.actionKey(obj.ActionID),
 			strings.NewReader(fmt.Sprintf("%s %d", obj.OutputID, mtime.UnixNano()))); err != nil {
 			gocache.Logf(ctx, "write action %s: %v", obj.ActionID, err)
 			return err
@@ -224,7 +224,7 @@ func (s *S3Cache) maybePutObject(ctx context.Context, outputID, diskPath, etag s
 		return time.Time{}, err
 	}
 
-	written, err := s.S3Client.PutCond(ctx, s.outputKey(outputID), etag, f)
+	written, err := s.Client.PutCond(ctx, s.outputKey(outputID), etag, f)
 	if err != nil {
 		s.putS3Error.Add(1)
 		gocache.Logf(ctx, "[s3] put object %s: %v", outputID, err)

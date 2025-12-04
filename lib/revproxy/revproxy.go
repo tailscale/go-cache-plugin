@@ -35,7 +35,6 @@ import (
 	"github.com/creachadair/mds/mapset"
 	"github.com/creachadair/scheddle"
 	"github.com/creachadair/taskgroup"
-	"github.com/tailscale/go-cache-plugin/lib/s3util"
 )
 
 // Server is a caching reverse proxy server that caches successful responses to
@@ -76,9 +75,9 @@ type Server struct {
 	// It must be non-empty.
 	Local string
 
-	// S3Client is the S3 client used to read and write cache entries to the
-	// backing store. It must be non-nil
-	S3Client *s3util.Client
+	// Storage is the client used to read and write cache entries to the
+	// backing store (e.g., S3 or GCS). It must be non-nil
+	Storage CacheClient
 
 	// KeyPrefix, if non-empty, is prepended to each key stored into S3, with an
 	// intervening slash.
