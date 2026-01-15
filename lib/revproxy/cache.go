@@ -44,9 +44,9 @@ func (s *Server) cacheStoreLocal(hash string, hdr http.Header, body []byte) erro
 	})
 }
 
-// cacheLoadS3 reads cached headers and body from the remote S3 cache.
+// cacheLoadS3 reads cached headers and body from the remote storage cache.
 func (s *Server) cacheLoadS3(ctx context.Context, hash string) ([]byte, http.Header, error) {
-	data, err := s.S3Client.GetData(ctx, s.makeKey(hash))
+	data, err := s.Storage.GetData(ctx, s.makeKey(hash))
 	if err != nil {
 		return nil, nil, err
 	}
@@ -54,7 +54,7 @@ func (s *Server) cacheLoadS3(ctx context.Context, hash string) ([]byte, http.Hea
 }
 
 // cacheStoreS3 returns a task that writes the contents of body to the remote
-// S3 cache.
+// storage cache.
 func (s *Server) cacheStoreS3(hash string, hdr http.Header, body []byte) taskgroup.Task {
 	var buf bytes.Buffer
 	writeCacheObject(&buf, hdr, body)
@@ -63,8 +63,8 @@ func (s *Server) cacheStoreS3(hash string, hdr http.Header, body []byte) taskgro
 		sctx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
 		defer cancel()
 
-		if err := s.S3Client.Put(sctx, s.makeKey(hash), &buf); err != nil {
-			s.logf("[s3] put %q failed: %v", hash, err)
+		if err := s.Storage.Put(sctx, s.makeKey(hash), &buf); err != nil {
+			s.logf("[storage] put %q failed: %v", hash, err)
 			s.rspPushError.Add(1)
 		} else {
 			s.rspPush.Add(1)

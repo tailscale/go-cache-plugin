@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: BSD-3-Clause
 
 // Package modproxy implements components of a Go module proxy that caches
-// files locally on disk, backed by objects in an S3 bucket.
+// files locally on disk, backed by objects in a cloud storage bucket (S3 or GCS).
 package modproxy
 
 import (
@@ -24,14 +24,14 @@ import (
 	"github.com/creachadair/atomicfile"
 	"github.com/creachadair/taskgroup"
 	"github.com/goproxy/goproxy"
-	"github.com/tailscale/go-cache-plugin/lib/s3util"
+	"github.com/tailscale/go-cache-plugin/lib/revproxy"
 	"golang.org/x/sync/semaphore"
 )
 
-var _ goproxy.Cacher = (*S3Cacher)(nil)
+var _ goproxy.Cacher = (*StorageCacher)(nil)
 
-// S3Cacher implements the [github.com/goproxy/goproxy.Cacher] interface using
-// a local disk cache backed by an S3 bucket.
+// StorageCacher implements the [github.com/goproxy/goproxy.Cacher] interface using
+// a local disk cache backed by a cloud storage bucket (S3 or GCS).
 //
 // # Cache Layout
 //
@@ -44,25 +44,25 @@ var _ goproxy.Cacher = (*S3Cacher)(nil)
 //	SHA256("fizzlepug") → 160db4d719252162c87a9169e26deda33d2340770d0d540fd4c580c55008b2d6
 //	<cache-dir>/module/16/160db4d719252162c87a9169e26deda33d2340770d0d540fd4c580c55008b2d6
 //
-// When files are stored in S3, the same naming convention is used, but with
+// When files are stored in cloud storage, the same naming convention is used, but with
 // the specified key prefix instead:
 //
 //	<key-prefix>/module/16/0db4d719252162c87a9169e26deda33d2340770d0d540fd4c580c55008b2d6
-type S3Cacher struct {
+type StorageCacher struct {
 	// Local is the path of a local cache directory where modules are cached.
 	// It must be non-empty.
 	Local string
 
-	// S3Client is the S3 client used to read and write cache entries to the
-	// backing store. It must be non-nil.
-	S3Client *s3util.Client
+	// Client is the storage client used to read and write cache entries to the
+	// backing store (S3 or GCS). It must be non-nil.
+	Client revproxy.CacheClient
 
-	// KeyPrefix, if non-empty, is prepended to each key stored into S3, with an
+	// KeyPrefix, if non-empty, is prepended to each key stored in storage, with an
 	// intervening slash.
 	KeyPrefix string
 
 	// MaxTasks, if positive, limits the number of concurrent tasks that may be
-	// interacting with S3. If zero or negative, the default is
+	// interacting with cloud storage. If zero or negative, the default is
 	// [runtime.NumCPU].
 	MaxTasks int
 
@@ -75,46 +75,46 @@ type S3Cacher struct {
 	//
 	// Each result is presented in the format:
 	//
-	//    B <op> "<name>" (<digest>)
-	//    E <op> "<name>", err=<error>, <time> elapsed
+	//    B <op> "<n>" (<digest>)
+	//    E <op> "<n>", err=<e>, <time> elapsed
 	//
 	// Where the operations are "GET" and "PUT". The "B" line is when the
 	// operation began, and "E" when it ended. When a GET operation successfully
-	// faults in a result from S3, the log is:
+	// faults in a result from cloud storage, the log is:
 	//
-	//    F GET "<name>" hit (<digest>)
+	//    F GET "<n>" hit (<digest>)
 	//
-	// When a PUT operation finishes writing a value behind to S3, the log is:
+	// When a PUT operation finishes writing a value behind to cloud storage, the log is:
 	//
-	//    W PUT "<name>", err=<error>, <time> elapsed
+	//    W PUT "<n>", err=<e>, <time> elapsed
 	//
 	LogRequests bool
 
-	// Tracks tasks interacting with S3 in the background.
+	// Tracks tasks interacting with cloud storage in the background.
 	initOnce sync.Once
 	tasks    *taskgroup.Group
 	start    func(taskgroup.Task)
 	sema     *semaphore.Weighted
 
-	pathError     expvar.Int // errors constructing file paths
-	getRequest    expvar.Int // total number of Get requests
-	getLocalHit   expvar.Int // get: hit in local directory
-	getLocalMiss  expvar.Int // get: miss in local directory
-	getFaultHit   expvar.Int // get: hit in S3
-	getFaultMiss  expvar.Int // get: miss in S3
-	getLocalError expvar.Int // get: error reading the local directory
-	getFaultError expvar.Int // get: error reading from S3
-	getLocalBytes expvar.Int // get: total bytes fetched from the local directory
-	getS3Bytes    expvar.Int // get: total bytes fetched from S3
-	putRequest    expvar.Int // total number of Put requests
-	putLocalHit   expvar.Int // put: put of object already stored locally
-	putLocalError expvar.Int // put: error writing the local directory
-	putS3Error    expvar.Int // put: error writing to S3
-	putLocalBytes expvar.Int // put: total bytes written to the local directory
-	putS3Bytes    expvar.Int // put: total bytes written to S3
+	pathError       expvar.Int // errors constructing file paths
+	getRequest      expvar.Int // total number of Get requests
+	getLocalHit     expvar.Int // get: hit in local directory
+	getLocalMiss    expvar.Int // get: miss in local directory
+	getFaultHit     expvar.Int // get: hit in remote storage
+	getFaultMiss    expvar.Int // get: miss in remote storage
+	getLocalError   expvar.Int // get: error reading the local directory
+	getFaultError   expvar.Int // get: error reading from storage
+	getLocalBytes   expvar.Int // get: total bytes fetched from the local directory
+	getStorageBytes expvar.Int // get: total bytes fetched from storage
+	putRequest      expvar.Int // total number of Put requests
+	putLocalHit     expvar.Int // put: put of object already stored locally
+	putLocalError   expvar.Int // put: error writing the local directory
+	putStorageError expvar.Int // put: error writing to storage
+	putLocalBytes   expvar.Int // put: total bytes written to the local directory
+	putStorageBytes expvar.Int // put: total bytes written to storage
 }
 
-func (c *S3Cacher) init() {
+func (c *StorageCacher) init() {
 	c.initOnce.Do(func() {
 		nt := c.MaxTasks
 		if nt <= 0 {
@@ -127,7 +127,7 @@ func (c *S3Cacher) init() {
 
 // Get implements a method of the goproxy.Cacher interface.  It reports cache
 // hits out of the local directory if available, or faults in from S3.
-func (c *S3Cacher) Get(ctx context.Context, name string) (_ io.ReadCloser, oerr error) {
+func (c *StorageCacher) Get(ctx context.Context, name string) (_ io.ReadCloser, oerr error) {
 	c.init()
 	c.getRequest.Add(1)
 	start := time.Now()
@@ -152,13 +152,13 @@ func (c *S3Cacher) Get(ctx context.Context, name string) (_ io.ReadCloser, oerr 
 		c.logf("get %q local: %v (treating as miss)", name, err)
 	}
 
-	// Local cache miss, fault in from S3.
+	// Local cache miss, fault in from cloud storage.
 	if err := c.sema.Acquire(ctx, 1); err != nil {
 		return nil, err
 	}
 	defer c.sema.Release(1)
 
-	obj, _, err := c.S3Client.Get(ctx, c.makeKey(hash))
+	obj, _, err := c.Client.Get(ctx, c.makeKey(hash))
 	if errors.Is(err, fs.ErrNotExist) {
 		c.getFaultMiss.Add(1)
 		return nil, err
@@ -179,7 +179,7 @@ func (c *S3Cacher) Get(ctx context.Context, name string) (_ io.ReadCloser, oerr 
 
 // putLocal reports whether the specified path already exists in the local
 // cache, and if not, writes data atomically into the path.
-func (c *S3Cacher) putLocal(ctx context.Context, name, path string, data io.Reader) (bool, error) {
+func (c *StorageCacher) putLocal(ctx context.Context, name, path string, data io.Reader) (bool, error) {
 	if _, err := os.Stat(path); err == nil {
 		return true, nil
 	}
@@ -193,7 +193,7 @@ func (c *S3Cacher) putLocal(ctx context.Context, name, path string, data io.Read
 
 // Put implements a method of the goproxy.Cacher interface. It stores data into
 // the local directory and then writes it back to S3 in the background.
-func (c *S3Cacher) Put(ctx context.Context, name string, data io.ReadSeeker) (oerr error) {
+func (c *StorageCacher) Put(ctx context.Context, name string, data io.ReadSeeker) (oerr error) {
 	c.init()
 	c.putRequest.Add(1)
 	start := time.Now()
@@ -213,7 +213,7 @@ func (c *S3Cacher) Put(ctx context.Context, name string, data io.ReadSeeker) (oe
 		return nil
 	}
 
-	// Try to push the object to S3 in the background.
+	// Try to push the object to cloud storage in the background.
 	f, size, err := openFileSize(path)
 	if err != nil {
 		c.putLocalError.Add(1)
@@ -223,15 +223,15 @@ func (c *S3Cacher) Put(ctx context.Context, name string, data io.ReadSeeker) (oe
 		defer f.Close()
 		start := time.Now()
 
-		// Override the context with a separate timeout in case S3 is farkakte.
+		// Override the context with a separate timeout in case the storage service is farkakte.
 		sctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 1*time.Minute)
 		defer cancel()
 
-		if err := c.S3Client.Put(sctx, c.makeKey(hash), f); err != nil {
-			c.putS3Error.Add(1)
-			c.logf("[s3] put %q failed: %v", name, err)
+		if err := c.Client.Put(sctx, c.makeKey(hash), f); err != nil {
+			c.putStorageError.Add(1)
+			c.logf("[storage] put %q failed: %v", name, err)
 		} else {
-			c.putS3Bytes.Add(size)
+			c.putStorageBytes.Add(size)
 		}
 		c.vlogf("mc W PUT %q, err=%v %v elapsed", name, err, time.Since(start))
 		return err
@@ -240,14 +240,14 @@ func (c *S3Cacher) Put(ctx context.Context, name string, data io.ReadSeeker) (oe
 }
 
 // Close waits until all background updates are complete.
-func (c *S3Cacher) Close() error {
+func (c *StorageCacher) Close() error {
 	c.init()
 	return c.tasks.Wait()
 }
 
 // Metrics returns a map of cacher metrics. The caller is responsible for
 // publishing these metrics.
-func (c *S3Cacher) Metrics() *expvar.Map {
+func (c *StorageCacher) Metrics() *expvar.Map {
 	m := new(expvar.Map)
 	m.Set("path_error", &c.pathError)
 	m.Set("get_request", &c.getRequest)
@@ -257,13 +257,13 @@ func (c *S3Cacher) Metrics() *expvar.Map {
 	m.Set("get_fault_miss", &c.getFaultMiss)
 	m.Set("get_local_error", &c.getLocalError)
 	m.Set("get_local_bytes", &c.getLocalBytes)
-	m.Set("get_s3_bytes", &c.getS3Bytes)
+	m.Set("get_storage_bytes", &c.getStorageBytes)
 	m.Set("put_request", &c.putRequest)
 	m.Set("put_local_hit", &c.putLocalHit)
 	m.Set("put_local_error", &c.putLocalError)
-	m.Set("put_s3_error", &c.putS3Error)
+	m.Set("put_storage_error", &c.putStorageError)
 	m.Set("put_local_bytes", &c.putLocalBytes)
-	m.Set("put_s3_bytes", &c.putS3Bytes)
+	m.Set("put_storage_bytes", &c.putStorageBytes)
 	return m
 }
 
@@ -271,15 +271,15 @@ func hashName(name string) string {
 	return fmt.Sprintf("%x", sha256.Sum256([]byte(name)))
 }
 
-// makeKey assembles a complete S3 key from the specified parts, including the
+// makeKey assembles a complete storage key from the specified parts, including the
 // key prefix if one is defined.
-func (c *S3Cacher) makeKey(hash string) string {
+func (c *StorageCacher) makeKey(hash string) string {
 	return path.Join(c.KeyPrefix, hash[:2], hash)
 }
 
 // makePath assembles a complete local cache path for the given name, creating
 // the enclosing directory if needed.
-func (c *S3Cacher) makePath(name string) (hash, path string, err error) {
+func (c *StorageCacher) makePath(name string) (hash, path string, err error) {
 	hash = hashName(name)
 	path = filepath.Join(c.Local, hash[:2], hash)
 	err = os.MkdirAll(filepath.Dir(path), 0755)
@@ -289,13 +289,13 @@ func (c *S3Cacher) makePath(name string) (hash, path string, err error) {
 	return hash, path, err
 }
 
-func (c *S3Cacher) logf(msg string, args ...any) {
+func (c *StorageCacher) logf(msg string, args ...any) {
 	if c.Logf != nil {
 		c.Logf(msg, args...)
 	}
 }
 
-func (c *S3Cacher) vlogf(msg string, args ...any) {
+func (c *StorageCacher) vlogf(msg string, args ...any) {
 	if c.LogRequests {
 		c.logf(msg, args...)
 	}

@@ -1,0 +1,19 @@
+# GCS Configuration for go-cache-plugin
+bucket:
+  name: go-cache-plugin-private
+  created: 2025-12-02
+  project: crusoecloud-build-dev
+  location: us-west1
+  access:
+    type: private
+    uniform_bucket_level_access: enabled
+
+# Default plugin settings
+plugin:
+  cache_dir: /tmp/gocache
+  key_prefix: "gcp"
+  min_upload_size: 1024  # 1KB
+
+authentication:
+  service_account: go-cache-pluggin-sa@crusoecloud-build-dev.iam.gserviceaccount.com
+  key_file: ./config/sa-key.json
