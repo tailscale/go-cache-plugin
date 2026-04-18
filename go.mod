@@ -6,14 +6,14 @@ require (
 	github.com/aws/aws-sdk-go-v2 v1.41.6
 	github.com/aws/aws-sdk-go-v2/config v1.32.16
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.99.1
-	github.com/creachadair/atomicfile v0.3.8
-	github.com/creachadair/command v0.2.0
+	github.com/creachadair/atomicfile v0.4.1
+	github.com/creachadair/command v0.2.1
 	github.com/creachadair/flax v0.0.5
-	github.com/creachadair/gocache v0.0.0-20250825180902-ad2fcf0fe74b
-	github.com/creachadair/mds v0.25.9
+	github.com/creachadair/gocache v0.0.0-20260418161958-99bafa82eafe
+	github.com/creachadair/mds v0.27.1
 	github.com/creachadair/mhttp v0.0.0-20250816170017-6ba77f126e85
 	github.com/creachadair/scheddle v0.0.0-20250829170737-bd8143d4c547
-	github.com/creachadair/taskgroup v0.14.0
+	github.com/creachadair/taskgroup v0.14.2
 	github.com/creachadair/tlsutil v0.0.0-20250624153316-15acc082fa38
 	github.com/goproxy/goproxy v0.21.0
 	golang.org/x/sync v0.19.0
@@ -45,10 +45,9 @@ require (
 	golang.org/x/crypto v0.46.0 // indirect
 	golang.org/x/exp v0.0.0-20250620022241-b7579e27df2b // indirect
 	golang.org/x/exp/typeparams v0.0.0-20240314144324-c7f7c6466f7f // indirect
-	golang.org/x/mod v0.30.0 // indirect
-	golang.org/x/tools v0.39.0 // indirect
-	golang.org/x/tools/go/expect v0.1.1-deprecated // indirect
-	honnef.co/go/tools v0.7.0-0.dev.0.20251022135355-8273271481d0 // indirect
+	golang.org/x/mod v0.31.0 // indirect
+	golang.org/x/tools v0.40.1-0.20260108161641-ca281cf95054 // indirect
+	honnef.co/go/tools v0.7.0 // indirect
 )
 
 retract (

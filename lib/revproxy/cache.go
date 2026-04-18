@@ -39,7 +39,7 @@ func (s *Server) cacheStoreLocal(hash string, hdr http.Header, body []byte) erro
 	if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
 		return err
 	}
-	return atomicfile.Tx(s.makePath(hash), 0644, func(f *atomicfile.File) error {
+	return atomicfile.Tx(s.makePath(hash), 0644, func(f io.Writer) error {
 		return writeCacheObject(f, hdr, body)
 	})
 }
