@@ -61,6 +61,10 @@ type S3Cacher struct {
 	// intervening slash.
 	KeyPrefix string
 
+	// ReadOnly, if true, prevents the cacher from writing any data back to S3.
+	// Data is still read from S3 and stored locally.
+	ReadOnly bool
+
 	// MaxTasks, if positive, limits the number of concurrent tasks that may be
 	// interacting with S3. If zero or negative, the default is
 	// [runtime.NumCPU].
@@ -210,6 +214,9 @@ func (c *S3Cacher) Put(ctx context.Context, name string, data io.ReadSeeker) (oe
 		return err
 	} else if ok {
 		c.putLocalHit.Add(1)
+		return nil
+	}
+	if c.ReadOnly {
 		return nil
 	}
 

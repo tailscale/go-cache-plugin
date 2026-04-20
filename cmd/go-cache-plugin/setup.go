@@ -78,6 +78,7 @@ func initCacheServer(env *command.Env) (*gocache.Server, *s3util.Client, error) 
 		S3Client:          client,
 		KeyPrefix:         flags.KeyPrefix,
 		MinUploadSize:     flags.MinUploadSize,
+		ReadOnly:          flags.ReadOnly,
 		UploadConcurrency: flags.S3Concurrency,
 	}
 	cache.SetMetrics(env.Context(), expvar.NewMap("gocache_host"))
@@ -120,6 +121,7 @@ func initModProxy(env *command.Env, s3c *s3util.Client) (_ http.Handler, cleanup
 		Local:       modCachePath,
 		S3Client:    s3c,
 		KeyPrefix:   path.Join(flags.KeyPrefix, "module"),
+		ReadOnly:    flags.ReadOnly,
 		MaxTasks:    flags.S3Concurrency,
 		Logf:        vprintf,
 		LogRequests: flags.DebugLog&debugModProxy != 0,
@@ -202,6 +204,7 @@ func initRevProxy(env *command.Env, s3c *s3util.Client, g *taskgroup.Group) (htt
 		Local:       revCachePath,
 		S3Client:    s3c,
 		KeyPrefix:   path.Join(flags.KeyPrefix, "revproxy"),
+		ReadOnly:    flags.ReadOnly,
 		Logf:        vprintf,
 		LogRequests: flags.DebugLog&debugRevProxy != 0,
 	}

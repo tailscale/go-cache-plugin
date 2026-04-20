@@ -84,6 +84,10 @@ type Server struct {
 	// intervening slash.
 	KeyPrefix string
 
+	// ReadOnly, if true, prevents the server from writing any data back to S3.
+	// Data is still read from S3 and stored locally.
+	ReadOnly bool
+
 	// Logf, if non-nil, is used to write log messages. If nil, logs are
 	// discarded.
 	Logf func(string, ...any)
@@ -275,7 +279,9 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 					} else {
 						s.rspSave.Add(1)
 						s.rspSaveBytes.Add(int64(len(body)))
-						s.start(s.cacheStoreS3(hash, rsp.Header, body))
+						if !s.ReadOnly {
+							s.start(s.cacheStoreS3(hash, rsp.Header, body))
+						}
 					}
 					s.vlogf("rp E H:%s fetch RC:yes B:%d (%v elapsed)", hash, len(body), time.Since(start))
 				}
