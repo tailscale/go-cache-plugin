@@ -6,14 +6,14 @@ require (
 	github.com/aws/aws-sdk-go-v2 v1.41.6
 	github.com/aws/aws-sdk-go-v2/config v1.32.16
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.99.1
-	github.com/creachadair/atomicfile v0.4.1
-	github.com/creachadair/command v0.2.2
-	github.com/creachadair/flax v0.0.5
-	github.com/creachadair/gocache v0.0.0-20260418161958-99bafa82eafe
-	github.com/creachadair/mds v0.27.1
+	github.com/creachadair/atomicfile v0.4.2
+	github.com/creachadair/command v0.2.6
+	github.com/creachadair/flax v0.0.6
+	github.com/creachadair/gocache v0.0.0-20260710224145-042386578e2a
+	github.com/creachadair/mds v0.29.2
 	github.com/creachadair/mhttp v0.0.0-20260407161248-6866af4c556b
 	github.com/creachadair/scheddle v0.0.0-20260418161627-87a4a0c853c4
-	github.com/creachadair/taskgroup v0.14.2
+	github.com/creachadair/taskgroup v0.14.4
 	github.com/creachadair/tlsutil v0.0.0-20260218173745-49b0059fedaf
 	github.com/goproxy/goproxy v0.21.0
 	golang.org/x/sync v0.19.0
