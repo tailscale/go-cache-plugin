@@ -158,6 +158,10 @@ func runServe(env *command.Env) error {
 			log.Printf("server close: %v (ignored)", err)
 		}
 	}
+
+	if flags.Verbose || flags.PrintMetrics {
+		fmt.Fprintln(os.Stderr, s.Metrics())
+	}
 	return nil
 }
 
