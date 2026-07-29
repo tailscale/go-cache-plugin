@@ -67,6 +67,10 @@ type S3Cache struct {
 	// which the cache will not write the object to S3.
 	MinUploadSize int64
 
+	// ReadOnly, if true, prevents the cache from writing any data back to S3.
+	// Data is still read from S3 and stored locally.
+	ReadOnly bool
+
 	// UploadConcurrency, if positive, defines the maximum number of concurrent
 	// tasks for writing cache entries to S3.  If zero or negative, it uses
 	// runtime.NumCPU.
@@ -154,6 +158,9 @@ func (s *S3Cache) Put(ctx context.Context, obj gocache.Object) (diskPath string,
 	diskPath, err := s.Local.Put(ctx, obj)
 	if err != nil {
 		return "", err // don't bother trying to forward it to the remote
+	}
+	if s.ReadOnly {
+		return diskPath, nil // don't write back to S3
 	}
 	if obj.Size < s.MinUploadSize {
 		s.putSkipSmall.Add(1)
