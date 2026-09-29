@@ -231,10 +231,10 @@ func (s *S3Cache) maybePutObject(ctx context.Context, outputID, diskPath, etag s
 		return fi.ModTime(), err
 	}
 	if written {
-		s.putS3Found.Add(1)
-		return fi.ModTime(), nil // already present and matching
+		s.putS3Object.Add(1)
+		return fi.ModTime(), nil
 	}
-	s.putS3Object.Add(1)
+	s.putS3Found.Add(1) // already present and matching
 	return fi.ModTime(), nil
 }
 
